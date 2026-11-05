@@ -1,0 +1,48 @@
+DEVELOPMENT ORDER 012 — COMPLETE
+
+Task: Five-Map Architecture and Navigation audit + fixes.
+
+STATUS: ALL TASKS COMPLETED
+
+Root Cause Analysis:
+The existing implementation had 4 gaps that needed fixing:
+
+1. MAP2-MAP4 had no landmarks (spawn positions). Fallback was (13,13) which
+   happens to be safe but is undocumented. Fixed by adding explicit landmarks.
+
+2. drawMap() had MAP1-specific zone detection hardcoded. All maps used the
+   same zones with different colors, making MAP2-MAP5 visually generic.
+   Fixed by adding per-map 'zones' definitions and a checkZone() helper.
+
+3. MAP1 had dead code: boatSite at {i:27,j:25} was unreachable (dock is at
+   landmark {i:14,j:23}). Removed the dead obstacle.
+
+4. All maps now have distinct zone profiles for varied terrain coloring.
+
+Fixes Applied:
+- MAP1: Added explicit zones object (woodland, abandoned, industrial, overgrown, homeDistrict)
+- MAP2: Added zones (abandoned全域, overgrown northwest)
+- MAP3: Added zones (industrial全域, overgrown southeast)
+- MAP4: Added zones (woodland全域, overgrown west)
+- MAP5: Added zones (shore east, overgrown northwest) — already had zones from prior fix
+- All maps: Added landmarks with explicit spawn positions
+- New checkZone() helper method on WorldScene
+- drawMap() now reads zones from this.mapDef.zones
+
+Architecture:
+- 5 independent map definitions with unique themes
+- Valid connectivity graph (all maps reachable from MAP1)
+- Return paths for MAP2-MAP4; MAP5 is terminal (intentional)
+- State persistence via GameState across transitions
+- Fog boundaries configured per map
+
+Verification:
+- npm run build: PASS (return code 0)
+- Node syntax check: PASS
+- Brace balance: 0 (correct)
+- All maps have zones, landmarks, fogMargin: PASS
+- No dead boatSite on MAP1: PASS
+
+Next: Proceed to DO013 — House Interior and Workbench Discovery.
+
+Source: /mnt/WorkDisk/3rd Year School/WebProg/Final2DGame/2DGame/resources/js/app.js

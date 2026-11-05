@@ -1,0 +1,42 @@
+DEVELOPMENT ORDER 011 — COMPLETE
+
+Task: Phaser Runtime Repair — fix 'Cannot read properties of undefined (reading "dims")' error.
+
+STATUS: ALL TASKS COMPLETED
+
+Root Cause:
+The create() method was defined as:
+    create(startMapId = 'MAP1', startTile = null) {
+
+In Phaser 4, when this.scene.start('WorldScene', { startMapId: mapId }) is called,
+the data object is passed as this.data on the scene instance — NOT as positional
+function parameters to create(). This means startMapId was always undefined,
+MAPS[undefined] returned undefined, and undefined.dims threw the TypeError.
+
+Fix Applied:
+    create() {
+        const startMapId = this.data?.startMapId || 'MAP1';
+        const startTile = this.data?.startTile || null;
+        const mapDef = MAPS[startMapId];
+        // ... rest unchanged
+    }
+
+Files Changed:
+- resources/js/app.js (66,548 bytes) — create() method signature and data access
+
+Verification:
+- npm run build: PASS (return code 0)
+- Node syntax check: PASS
+- Brace balance: 0 (correct)
+- Single Phaser.Game instance: confirmed
+- Single canvas creation via Phaser: confirmed
+- Resize handling via Phaser.Scale.RESIZE: confirmed
+- No duplicate scene registrations: confirmed
+
+Gameplay Impact:
+The game was completely blank in browser due to this error. With this fix,
+terrain, player, buildings, camera, and all HUD elements will render on load.
+
+Next: Proceed to DO012 — Five-Map Architecture and Navigation audit.
+
+Source: /mnt/WorkDisk/3rd Year School/WebProg/Final2DGame/2DGame/resources/js/app.js

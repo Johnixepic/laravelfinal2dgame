@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE LAST CONNECTION - Diagnostic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #101b1d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+        }
+        #game-container {
+            width: 960px;
+            height: 600px;
+        }
+        #debug-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="debug-info">Loading...</div>
+
+    <script type="module">
+        // Load the built bundle
+        const script = document.createElement('script');
+        script.src = '/build/assets/app-CrGWfUh8.js';
+        script.type = 'module';
+        document.head.appendChild(script);
+
+        script.onload = () => {
+            document.getElementById('debug-info').textContent = 'Script loaded successfully!';
+        };
+        script.onerror = () => {
+            document.getElementById('debug-info').textContent = 'ERROR: Failed to load game bundle';
+        };
+    </script>
+</body>
+</html>

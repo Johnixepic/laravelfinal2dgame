@@ -1,0 +1,596 @@
+import Phaser from 'phaser';
+
+const TILE_W = 64;
+const TILE_H = 32;
+const MAP_SIZE = 30;
+const WORLD_W = MAP_SIZE * TILE_W;
+const WORLD_H = MAP_SIZE * TILE_H + 160;
+
+const ITEM_DEFS = {
+    wood:   { name: 'Wood',       limit: 30, desc: 'Basic building material.' },
+    scrap:  { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.' },
+    rope:   { name: 'Rope',       limit: 10, desc: 'Crafting and boat construction.' },
+    cloth:  { name: 'Cloth',      limit: 10, desc: 'Sails and repairs.' },
+    food:   { name: 'Food',       limit: 10, desc: 'Future survival mechanic.' },
+};
+
+class WorldScene extends Phaser.Scene {
+    constructor() {
+        super('WorldScene');
+    }
+
+    create() {
+        this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
+
+        this.drawIsland();
+        this.createTextures();
+        this.createBuildings();
+        this.createPlayer();
+        this.createControls();
+        this.createInteractionSystem();
+        this.createCamera();
+
+        this.physics.world.createDebugGraphic();
+        this.physics.world.debugGraphic.setDepth(10000);
+
+        this.add.text(24, 24, 'THE LAST CONNECTION', {
+            fontFamily: 'sans-serif',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: '#14251ddd',
+            padding: { x: 12, y: 9 },
+        })
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.add.text(24, 66, 'NEIGHBORHOOD  /  DAY 01', {
+            fontFamily: 'sans-serif',
+            fontSize: '12px',
+            color: '#d8e8d2',
+            backgroundColor: '#14251dcc',
+            padding: { x: 10, y: 7 },
+        })
+            .setScrollFactor(0)
+            .setDepth(1000);
+    }
+
+    tilePosition(i, j) {
+        return {
+            x: 960 + (i - j) * TILE_W / 2,
+            y: 40 + (i + j) * TILE_H / 2,
+        };
+    }
+
+    drawIsland() {
+        const graphics = this.add.graphics();
+
+        graphics.fillStyle(0x18343b, 1);
+        graphics.fillRect(0, 0, WORLD_W, WORLD_H);
+
+        for (let i = 0; i < MAP_SIZE; i++) {
+            for (let j = 0; j < MAP_SIZE; j++) {
+                const { x, y } = this.tilePosition(i, j);
+                const edge = i === 0 || j === 0 ||
+                    i === MAP_SIZE - 1 || j === MAP_SIZE - 1;
+
+                const road = i === 15 || j === 15;
+                let color;
+
+                if (edge) {
+                    color = 0xb5a77b;
+                } else if (road) {
+                    color = 0x77776a;
+                } else {
+                    color = ((i * 7 + j * 13) % 5 === 0)
+                        ? 0x66865a
+                        : 0x72945f;
+                }
+
+                graphics.fillStyle(color, 1);
+                graphics.lineStyle(1, 0x000000, 0.08);
+
+                graphics.beginPath();
+                graphics.moveTo(x, y - TILE_H / 2);
+                graphics.lineTo(x + TILE_W / 2, y);
+                graphics.lineTo(x, y + TILE_H / 2);
+                graphics.lineTo(x - TILE_W / 2, y);
+                graphics.closePath();
+                graphics.fillPath();
+                graphics.strokePath();
+            }
+        }
+
+        graphics.setDepth(-1000);
+    }
+
+    createTextures() {
+        const house = this.make.graphics({ x: 0, y: 0, add: false });
+
+        house.fillStyle(0x695344);
+        house.fillRect(12, 35, 72, 42);
+
+        house.fillStyle(0x994e40);
+        house.fillTriangle(4, 36, 48, 5, 92, 36);
+
+        house.fillStyle(0xc5b69a);
+        house.fillRect(40, 51, 17, 26);
+
+        house.fillStyle(0x91bdc3);
+        house.fillRect(20, 45, 14, 13);
+        house.fillRect(63, 45, 14, 13);
+
+        house.generateTexture('house', 96, 80);
+        house.destroy();
+
+        const tree = this.make.graphics({ x: 0, y: 0, add: false });
+
+        tree.fillStyle(0x59412c);
+        tree.fillRect(16, 24, 10, 28);
+
+        tree.fillStyle(0x31583c);
+        tree.fillCircle(21, 20, 18);
+
+        tree.fillStyle(0x507b47);
+        tree.fillCircle(12, 24, 11);
+
+        tree.generateTexture('tree', 42, 54);
+        tree.destroy();
+
+        const playerTexture = this.make.graphics({
+            x: 0,
+            y: 0,
+            add: false,
+        });
+
+        playerTexture.fillStyle(0x17201d, 0.25);
+        playerTexture.fillEllipse(16, 30, 24, 10);
+
+        playerTexture.fillStyle(0xe2c49a);
+        playerTexture.fillCircle(16, 9, 7);
+
+        playerTexture.fillStyle(0x416f9a);
+        playerTexture.fillRoundedRect(8, 16, 16, 16, 4);
+
+        playerTexture.fillStyle(0x292e38);
+        playerTexture.fillRect(9, 29, 5, 7);
+        playerTexture.fillRect(18, 29, 5, 7);
+
+        playerTexture.generateTexture('player', 32, 38);
+        playerTexture.destroy();
+    }
+
+    createBuildings() {
+        this.obstacles = this.physics.add.staticGroup();
+
+        const buildings = [
+            { i: 10, j: 11, name: 'Your Home' },
+            { i: 20, j: 9, name: 'Abandoned House' },
+            { i: 10, j: 21, name: 'Garden Shed' },
+            { i: 21, j: 20, name: 'Old House' },
+        ];
+
+        for (const building of buildings) {
+            const p = this.tilePosition(building.i, building.j);
+
+            const object = this.obstacles.create(
+                p.x,
+                p.y - 20,
+                'house'
+            );
+
+            object.setDepth(object.y);
+            object.refreshBody();
+            object.setData('name', building.name);
+            object.setData('kind', 'house');
+            object.setData('searched', false);
+        }
+
+        const trees = [
+            [5, 8], [7, 7], [6, 11], [8, 19],
+            [5, 21], [23, 8], [24, 12], [23, 23],
+            [18, 24], [12, 24], [25, 18], [7, 24],
+        ];
+
+        for (const [i, j] of trees) {
+            const p = this.tilePosition(i, j);
+
+            const tree = this.obstacles.create(
+                p.x,
+                p.y - 14,
+                'tree'
+            );
+
+            tree.setDepth(tree.y);
+            tree.refreshBody();
+            tree.setData('name', 'Tree');
+            tree.setData('kind', 'tree');
+            tree.setData('harvested', false);
+        }
+    }
+
+    createPlayer() {
+        const start = this.tilePosition(13, 13);
+
+        this.player = this.physics.add.sprite(
+            start.x,
+            start.y,
+            'player'
+        );
+
+        this.player.setDepth(start.y);
+        this.player.setCollideWorldBounds(true);
+        this.player.body.setSize(18, 14);
+        this.player.body.setOffset(7, 21);
+        this.player.body.setDrag(900, 900);
+        this.player.body.setMaxVelocity(180, 180);
+
+        this.physics.add.collider(this.player, this.obstacles);
+    }
+
+    createControls() {
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        this.keys = this.input.keyboard.addKeys({
+            W: Phaser.Input.Keyboard.KeyCodes.W,
+            A: Phaser.Input.Keyboard.KeyCodes.A,
+            S: Phaser.Input.Keyboard.KeyCodes.S,
+            D: Phaser.Input.Keyboard.KeyCodes.D,
+            E: Phaser.Input.Keyboard.KeyCodes.E,
+        });
+
+        this.add.text(24, 0, 'WASD / ARROWS: MOVE', {
+            fontFamily: 'sans-serif',
+            fontSize: '12px',
+            color: '#ffffff',
+            backgroundColor: '#14251ddd',
+            padding: { x: 12, y: 9 },
+        })
+            .setOrigin(0, 1)
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.events.on('postupdate', () => {
+            this.player.setDepth(this.player.y);
+        });
+    }
+
+    createInteractionSystem() {
+        this.interactionRange = 82;
+        this.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
+
+        this.nearbyObject = null;
+        this.interactionWasDown = false;
+
+        this.interactionPrompt = this.add.text(
+            480, 520, '',
+            {
+                fontFamily: 'sans-serif',
+                fontSize: '15px',
+                color: '#ffffff',
+                backgroundColor: '#14251eee',
+                padding: { x: 14, y: 10 },
+                align: 'center',
+            }
+        )
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(2000)
+            .setVisible(false);
+
+        this.inventoryText = this.add.text(
+            24, 112, '',
+            {
+                fontFamily: 'sans-serif',
+                fontSize: '13px',
+                color: '#ffffff',
+                backgroundColor: '#14251ddd',
+                padding: { x: 12, y: 9 },
+                lineSpacing: 5,
+            }
+        )
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.messageText = this.add.text(
+            480, 465, '',
+            {
+                fontFamily: 'sans-serif',
+                fontSize: '14px',
+                color: '#e2f0d8',
+                backgroundColor: '#14251eee',
+                padding: { x: 12, y: 8 },
+                align: 'center',
+            }
+        )
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(2000);
+
+        this.messageText.setVisible(false);
+        this.refreshInventoryUI();
+    }
+
+    addItem(key, amount) {
+        const def = ITEM_DEFS[key];
+        if (!def) return 0;
+
+        const current = this.inventory[key] || 0;
+        const space = def.limit - current;
+        if (space <= 0) {
+            this.showMessage(`${def.name} storage is full.`);
+            return 0;
+        }
+
+        const added = Math.min(amount, space);
+        this.inventory[key] = current + added;
+
+        if (added > 0) {
+            this.refreshInventoryUI();
+            this.showMessage(`+${added} ${def.name}`);
+        }
+
+        if (added < amount) {
+            this.showMessage(`${def.name} stack near limit — received ${added} of ${amount}.`);
+        }
+
+        return added;
+    }
+
+    removeItem(key, amount) {
+        const current = this.inventory[key] || 0;
+        const canRemove = Math.min(amount, current);
+        if (canRemove <= 0) return false;
+
+        this.inventory[key] -= canRemove;
+        this.refreshInventoryUI();
+        return true;
+    }
+
+    hasItem(key, amount = 1) {
+        return (this.inventory[key] || 0) >= amount;
+    }
+
+    getItem(key) {
+        return this.inventory[key] || 0;
+    }
+
+    refreshInventoryUI() {
+        const lines = ['SURVIVOR INVENTORY', ''];
+
+        for (const [key, def] of Object.entries(ITEM_DEFS)) {
+            const count = this.inventory[key] || 0;
+            lines.push(`${def.name}  ${count} / ${def.limit}`);
+            lines.push(`  ${def.desc}`);
+            lines.push('');
+        }
+
+        this.inventoryText.setText(lines.join('\n'));
+    }
+
+    showMessage(message) {
+        this.messageText.setText(message);
+        this.messageText.setVisible(true);
+
+        if (this.messageHideEvent) {
+            this.messageHideEvent.remove(false);
+        }
+
+        this.messageHideEvent = this.time.delayedCall(1800, () => {
+            this.messageText.setVisible(false);
+        });
+    }
+
+    findNearbyObject() {
+        let nearest = null;
+        let nearestDistance = this.interactionRange;
+
+        for (const object of this.obstacles.getChildren()) {
+            if (!object.active) continue;
+
+            const distance = Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                object.x,
+                object.y
+            );
+
+            if (distance < nearestDistance) {
+                nearest = object;
+                nearestDistance = distance;
+            }
+        }
+
+        return nearest;
+    }
+
+    interactWith(object) {
+        const kind = object.getData('kind');
+        const name = object.getData('name') || 'Object';
+
+        if (kind === 'house') {
+            if (object.getData('searched')) {
+                this.showMessage(`${name} has already been searched.`);
+                return;
+            }
+
+            object.setData('searched', true);
+
+            const lootTables = {
+                'Your Home': [
+                    { wood: 2, cloth: 1, food: 1 },
+                    { wood: 3, food: 1 },
+                    { cloth: 2, food: 1 },
+                ],
+                'Abandoned House': [
+                    { scrap: 2, rope: 1 },
+                    { scrap: 1, cloth: 1, food: 1 },
+                    { rope: 1, food: 1 },
+                    { scrap: 2, food: 1 },
+                ],
+                'Garden Shed': [
+                    { wood: 3, rope: 1 },
+                    { wood: 2, scrap: 1 },
+                    { rope: 1, scrap: 1 },
+                    { wood: 2, rope: 1 },
+                ],
+                'Old House': [
+                    { scrap: 2, cloth: 1 },
+                    { rope: 1, cloth: 1, food: 1 },
+                    { scrap: 1, rope: 1 },
+                    { cloth: 2, food: 1 },
+                ],
+            };
+
+            const table = lootTables[name] || lootTables['Abandoned House'];
+            const loot = Phaser.Math.RND.pick(table);
+
+            for (const [item, amount] of Object.entries(loot)) {
+                this.addItem(item, amount);
+            }
+
+            this.showMessage(`Searched ${name}. Supplies recovered!`);
+            return;
+        }
+
+        if (kind === 'tree') {
+            if (object.getData('harvested')) {
+                this.showMessage('This tree has already been harvested.');
+                return;
+            }
+
+            object.setData('harvested', true);
+            this.addItem('wood', 3);
+        }
+    }
+
+    createCamera() {
+        this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.cameras.main.setZoom(1);
+    }
+
+    isInsideIsland(x, y) {
+        const centerX = 960;
+        const centerY = 40 + ((MAP_SIZE - 1) * TILE_H) / 2;
+
+        const halfWidth = ((MAP_SIZE - 1) * TILE_W) / 2;
+        const halfHeight = ((MAP_SIZE - 1) * TILE_H) / 2;
+
+        const normalizedX = Math.abs(x - centerX) / halfWidth;
+        const normalizedY = Math.abs(y - centerY) / halfHeight;
+
+        return normalizedX + normalizedY <= 0.94;
+    }
+
+    update() {
+        const body = this.player.body;
+        if (!body) return;
+
+        this.nearbyObject = this.findNearbyObject();
+
+        if (this.nearbyObject) {
+            const kind = this.nearbyObject.getData('kind');
+            const name = this.nearbyObject.getData('name') || 'Object';
+            const alreadyUsed = kind === 'house'
+                ? this.nearbyObject.getData('searched')
+                : this.nearbyObject.getData('harvested');
+
+            let action = kind === 'house' ? 'Search' : 'Gather wood';
+
+            if (alreadyUsed) {
+                action = kind === 'house' ? 'Already searched' : 'Already harvested';
+            }
+
+            this.interactionPrompt.setText(
+                alreadyUsed ? `${name} — ${action}` : `E — ${action}: ${name}`
+            );
+            this.interactionPrompt.setVisible(true);
+        } else {
+            this.interactionPrompt.setVisible(false);
+        }
+
+        const interactionDown = this.keys.E.isDown;
+
+        if (interactionDown && !this.interactionWasDown && this.nearbyObject) {
+            this.interactWith(this.nearbyObject);
+        }
+
+        this.interactionWasDown = interactionDown;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (this.cursors.left.isDown || this.keys.A.isDown) dx -= 1;
+        if (this.cursors.right.isDown || this.keys.D.isDown) dx += 1;
+        if (this.cursors.up.isDown || this.keys.W.isDown) dy -= 1;
+        if (this.cursors.down.isDown || this.keys.S.isDown) dy += 1;
+
+        if (dx !== 0 && dy !== 0) {
+            const length = Math.sqrt(dx * dx + dy * dy);
+            dx /= length;
+            dy /= length;
+        }
+
+        // Avoid snapping the player backward at the island edge.
+        // When outside the boundary, block input pointing farther away
+        // from the island center while allowing movement back toward land.
+        const inside = this.isInsideIsland(
+            this.player.x,
+            this.player.y
+        );
+
+        if (!inside) {
+            const centerX = 960;
+            const centerY = 504;
+
+            const towardCenterX = centerX - this.player.x;
+            const towardCenterY = centerY - this.player.y;
+
+            const dot =
+                dx * towardCenterX +
+                dy * towardCenterY;
+
+            if (dot < 0) {
+                dx = 0;
+                dy = 0;
+            }
+        }
+
+        body.setAcceleration(dx * 900, dy * 900);
+
+        if (dx === 0) {
+            body.setAccelerationX(0);
+        }
+
+        if (dy === 0) {
+            body.setAccelerationY(0);
+        }
+    }
+}
+
+const gameContainer = document.getElementById('game-container');
+
+if (gameContainer) {
+    new Phaser.Game({
+        type: Phaser.AUTO,
+        parent: 'game-container',
+        width: 960,
+        height: 600,
+        backgroundColor: '#18343b',
+        pixelArt: false,
+        antialias: true,
+        scale: {
+            mode: Phaser.Scale.RESIZE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: true,
+            },
+        },
+        scene: [WorldScene],
+    });
+}
+

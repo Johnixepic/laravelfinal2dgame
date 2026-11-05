@@ -1,0 +1,320 @@
+import Phaser from 'phaser';
+
+const TILE_W = 64;
+const TILE_H = 32;
+const MAP_SIZE = 30;
+const WORLD_W = MAP_SIZE * TILE_W;
+const WORLD_H = MAP_SIZE * TILE_H + 160;
+
+class WorldScene extends Phaser.Scene {
+    constructor() {
+        super('WorldScene');
+    }
+
+    create() {
+        this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
+
+        this.drawIsland();
+        this.createTextures();
+        this.createBuildings();
+        this.createPlayer();
+        this.createControls();
+        this.createCamera();
+
+        this.physics.world.createDebugGraphic();
+        this.physics.world.debugGraphic.setDepth(10000);
+
+        this.add.text(24, 24, 'THE LAST CONNECTION', {
+            fontFamily: 'sans-serif',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: '#14251ddd',
+            padding: { x: 12, y: 9 },
+        })
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.add.text(24, 66, 'NEIGHBORHOOD  /  DAY 01', {
+            fontFamily: 'sans-serif',
+            fontSize: '12px',
+            color: '#d8e8d2',
+            backgroundColor: '#14251dcc',
+            padding: { x: 10, y: 7 },
+        })
+            .setScrollFactor(0)
+            .setDepth(1000);
+    }
+
+    tilePosition(i, j) {
+        return {
+            x: 960 + (i - j) * TILE_W / 2,
+            y: 40 + (i + j) * TILE_H / 2,
+        };
+    }
+
+    drawIsland() {
+        const graphics = this.add.graphics();
+
+        graphics.fillStyle(0x18343b, 1);
+        graphics.fillRect(0, 0, WORLD_W, WORLD_H);
+
+        for (let i = 0; i < MAP_SIZE; i++) {
+            for (let j = 0; j < MAP_SIZE; j++) {
+                const { x, y } = this.tilePosition(i, j);
+                const edge = i === 0 || j === 0 ||
+                    i === MAP_SIZE - 1 || j === MAP_SIZE - 1;
+
+                const road = i === 15 || j === 15;
+                let color;
+
+                if (edge) {
+                    color = 0xb5a77b;
+                } else if (road) {
+                    color = 0x77776a;
+                } else {
+                    color = ((i * 7 + j * 13) % 5 === 0)
+                        ? 0x66865a
+                        : 0x72945f;
+                }
+
+                graphics.fillStyle(color, 1);
+                graphics.lineStyle(1, 0x000000, 0.08);
+
+                graphics.beginPath();
+                graphics.moveTo(x, y - TILE_H / 2);
+                graphics.lineTo(x + TILE_W / 2, y);
+                graphics.lineTo(x, y + TILE_H / 2);
+                graphics.lineTo(x - TILE_W / 2, y);
+                graphics.closePath();
+                graphics.fillPath();
+                graphics.strokePath();
+            }
+        }
+
+        graphics.setDepth(-1000);
+    }
+
+    createTextures() {
+        const house = this.make.graphics({ x: 0, y: 0, add: false });
+
+        house.fillStyle(0x695344);
+        house.fillRect(12, 35, 72, 42);
+
+        house.fillStyle(0x994e40);
+        house.fillTriangle(4, 36, 48, 5, 92, 36);
+
+        house.fillStyle(0xc5b69a);
+        house.fillRect(40, 51, 17, 26);
+
+        house.fillStyle(0x91bdc3);
+        house.fillRect(20, 45, 14, 13);
+        house.fillRect(63, 45, 14, 13);
+
+        house.generateTexture('house', 96, 80);
+        house.destroy();
+
+        const tree = this.make.graphics({ x: 0, y: 0, add: false });
+
+        tree.fillStyle(0x59412c);
+        tree.fillRect(16, 24, 10, 28);
+
+        tree.fillStyle(0x31583c);
+        tree.fillCircle(21, 20, 18);
+
+        tree.fillStyle(0x507b47);
+        tree.fillCircle(12, 24, 11);
+
+        tree.generateTexture('tree', 42, 54);
+        tree.destroy();
+
+        const playerTexture = this.make.graphics({
+            x: 0,
+            y: 0,
+            add: false,
+        });
+
+        playerTexture.fillStyle(0x17201d, 0.25);
+        playerTexture.fillEllipse(16, 30, 24, 10);
+
+        playerTexture.fillStyle(0xe2c49a);
+        playerTexture.fillCircle(16, 9, 7);
+
+        playerTexture.fillStyle(0x416f9a);
+        playerTexture.fillRoundedRect(8, 16, 16, 16, 4);
+
+        playerTexture.fillStyle(0x292e38);
+        playerTexture.fillRect(9, 29, 5, 7);
+        playerTexture.fillRect(18, 29, 5, 7);
+
+        playerTexture.generateTexture('player', 32, 38);
+        playerTexture.destroy();
+    }
+
+    createBuildings() {
+        this.obstacles = this.physics.add.staticGroup();
+
+        const buildings = [
+            { i: 10, j: 11, name: 'Your Home' },
+            { i: 20, j: 9, name: 'Abandoned House' },
+            { i: 10, j: 21, name: 'Garden Shed' },
+            { i: 21, j: 20, name: 'Old House' },
+        ];
+
+        for (const building of buildings) {
+            const p = this.tilePosition(building.i, building.j);
+
+            const object = this.obstacles.create(
+                p.x,
+                p.y - 20,
+                'house'
+            );
+
+            object.setDepth(object.y);
+            object.refreshBody();
+            object.setData('name', building.name);
+        }
+
+        const trees = [
+            [5, 8], [7, 7], [6, 11], [8, 19],
+            [5, 21], [23, 8], [24, 12], [23, 23],
+            [18, 24], [12, 24], [25, 18], [7, 24],
+        ];
+
+        for (const [i, j] of trees) {
+            const p = this.tilePosition(i, j);
+
+            const tree = this.obstacles.create(
+                p.x,
+                p.y - 14,
+                'tree'
+            );
+
+            tree.setDepth(tree.y);
+            tree.refreshBody();
+        }
+    }
+
+    createPlayer() {
+        const start = this.tilePosition(13, 13);
+
+        this.player = this.physics.add.sprite(
+            start.x,
+            start.y,
+            'player'
+        );
+
+        this.player.setDepth(start.y);
+        this.player.setCollideWorldBounds(true);
+        this.player.body.setSize(18, 14);
+        this.player.body.setOffset(7, 21);
+        this.player.body.setDrag(900, 900);
+        this.player.body.setMaxVelocity(180, 180);
+
+        this.physics.add.collider(this.player, this.obstacles);
+    }
+
+    createControls() {
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        this.keys = this.input.keyboard.addKeys({
+            W: Phaser.Input.Keyboard.KeyCodes.W,
+            A: Phaser.Input.Keyboard.KeyCodes.A,
+            S: Phaser.Input.Keyboard.KeyCodes.S,
+            D: Phaser.Input.Keyboard.KeyCodes.D,
+        });
+
+        this.add.text(24, 0, 'WASD / ARROWS: MOVE', {
+            fontFamily: 'sans-serif',
+            fontSize: '12px',
+            color: '#ffffff',
+            backgroundColor: '#14251ddd',
+            padding: { x: 12, y: 9 },
+        })
+            .setOrigin(0, 1)
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.events.on('postupdate', () => {
+            this.player.setDepth(this.player.y);
+        });
+    }
+
+    createCamera() {
+        this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.cameras.main.setZoom(1);
+    }
+
+    isInsideIsland(x, y) {
+        const centerX = 960;
+        const centerY = 40 + ((MAP_SIZE - 1) * TILE_H) / 2;
+
+        const halfWidth = ((MAP_SIZE - 1) * TILE_W) / 2;
+        const halfHeight = ((MAP_SIZE - 1) * TILE_H) / 2;
+
+        const normalizedX = Math.abs(x - centerX) / halfWidth;
+        const normalizedY = Math.abs(y - centerY) / halfHeight;
+
+        return normalizedX + normalizedY <= 0.94;
+    }
+
+    update() {
+        const body = this.player.body;
+        if (!body) return;
+
+        const previousX = this.player.x;
+        const previousY = this.player.y;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (this.cursors.left.isDown || this.keys.A.isDown) dx -= 1;
+        if (this.cursors.right.isDown || this.keys.D.isDown) dx += 1;
+        if (this.cursors.up.isDown || this.keys.W.isDown) dy -= 1;
+        if (this.cursors.down.isDown || this.keys.S.isDown) dy += 1;
+
+        if (dx !== 0 && dy !== 0) {
+            const length = Math.sqrt(dx * dx + dy * dy);
+            dx /= length;
+            dy /= length;
+        }
+
+        body.setAcceleration(dx * 900, dy * 900);
+
+        if (dx === 0) body.setAccelerationX(0);
+        if (dy === 0) body.setAccelerationY(0);
+
+        if (!this.isInsideIsland(this.player.x, this.player.y)) {
+            this.player.setPosition(previousX, previousY);
+            body.setVelocity(0, 0);
+            body.setAcceleration(0, 0);
+        }
+    }
+}
+
+const gameContainer = document.getElementById('game-container');
+
+if (gameContainer) {
+    new Phaser.Game({
+        type: Phaser.AUTO,
+        parent: 'game-container',
+        width: 960,
+        height: 600,
+        backgroundColor: '#18343b',
+        pixelArt: false,
+        antialias: true,
+        scale: {
+            mode: Phaser.Scale.RESIZE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: true,
+            },
+        },
+        scene: [WorldScene],
+    });
+}
+
