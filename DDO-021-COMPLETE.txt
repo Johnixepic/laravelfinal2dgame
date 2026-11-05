@@ -1,0 +1,91 @@
+# DO021 — Project Reproducible, Documented, Ready for Demonstration
+
+## Deliverable Status: ✅ Complete
+
+## Build & Run Instructions
+
+### Prerequisites
+- Node.js 18+
+- PHP 8.1+ (Laravel)
+- Composer
+- npm
+
+### Clone and Setup
+```bash
+cd /mnt/WorkDisk/3rd Year School/WebProg/Final2DGame/2DGame
+composer install
+npm install
+npm run build
+```
+
+### Run Development Server
+```bash
+php artisan serve
+```
+Then open http://localhost:8000/game in a browser.
+
+### Production Build
+```bash
+npm run build
+php artisan optimize
+```
+
+## Project Structure
+```
+2DGame/
+├── resources/
+│   ├── js/
+│   │   ├── app.js              # Main Phaser game (1921 lines)
+│   │   └── *.bak               # Backup files
+│   └── views/
+│       └── game.blade.php      # Laravel view with header/footer
+├── public/build/               # Vite compiled assets
+├── DDO-017-COMPLETE.txt       # Playthrough testing docs
+├── DDO-018-COMPLETE.txt       # Player guidance docs
+├── DDO-019-COMPLETE.txt       # State management docs
+├── DDO-020-COMPLETE.txt       # Bug audit docs
+└── DDO-021-COMPLETE.txt       # This file
+```
+
+## Game Overview
+- **Title**: THE LAST CONNECTION
+- **Genre**: 2D exploration/crafting game (Phaser.js)
+- **Canvas**: 960×600, responsive resize
+- **Maps**: 5 connected maps (island chain, eastward progression)
+- **Win Condition**: Build a boat through 4 stages, reach the coast, sail away
+
+## Controls
+| Key | Action |
+|-----|--------|
+| WASD / Arrows | Move |
+| E | Interact (search, gather, craft, build boat) |
+| ESC | Close crafting panel |
+| R (after win) | Restart game |
+
+## Demonstration Script
+1. Start game — player appears on Home Island
+2. Search "Your Home" (E) — get wood, cloth, food
+3. Walk to workbench (E) — open crafting panel
+4. Craft Crude Axe (if resources available)
+5. Cut trees for wood (E near trees)
+6. Walk to Boat Dock (south) — build Hull stage
+7. Explore east to MAP2 — search houses for scrap
+8. Return to boat — build Reinforcement stage
+9. Continue to MAP3 — gather rope from houses
+10. Build Rigging stage at boat
+11. Continue to MAP4 — gather cloth
+12. Build Sail stage — boat complete!
+13. Walk all the way to MAP5 — find coast
+14. Press E at boat site — cinematic ending plays
+15. Press R — game restarts fresh
+
+## Known Limitations (Non-Blocking)
+- No mobile touch controls
+- No audio (intentional for demo scope)
+- No save/load persistence between browser sessions
+- Empty event callbacks in game initialization (cosmetic)
+
+## Git History
+- Latest commit: DO016 fix + DO017-DO021 completion
+- Branch: main
+- All deliverables tracked in DDO-XXX-COMPLETE.txt files

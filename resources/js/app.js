@@ -441,6 +441,14 @@ class WorldScene extends Phaser.Scene {
         this.workbenchDiscovered = false;
         this.indoorMode = false;
 
+        // DO019: Initialize recipe card tracking
+        this.recipeCards = [];
+
+        // DO018: Hint system state
+        this.hintIndex = 0;
+        this.hintText = '';
+        this.hintTimer = null;
+
         this.physics.world.setBounds(0, 0, this.worldW, this.worldH);
 
         // Clear any leftover graphics from previous map
@@ -921,6 +929,24 @@ class WorldScene extends Phaser.Scene {
             .setOrigin(1, 0)
             .setScrollFactor(0)
             .setDepth(1000);
+
+        // DO018: Hint display text
+        this.hintTextObj = this.add.text(
+            480, 545, '',
+            {
+                fontFamily: 'sans-serif',
+                fontSize: '12px',
+                color: '#7a9a72',
+                backgroundColor: '#0f1c12cc',
+                padding: { x: 12, y: 6 },
+                align: 'center',
+            }
+        )
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(2000)
+            .setVisible(false);
+
         this.refreshBoatUI();
 
         const camW = this.cameras.main.width;
@@ -1037,11 +1063,6 @@ class WorldScene extends Phaser.Scene {
 
         this.craftingPanel.add([panelBorder, panelBackground, panelTitle, recipeScrollArea]);
         this.craftingPanel.setVisible(false);
-        
-        // DO015: Boat Progress UI
-        this.boatProgressText = this.add.text(20, 60, '', {
-            fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#94a3b8'
-        }).setDepth(1).setVisible(false);
         this.craftingOpen = false;
 
         this.refreshInventoryUI();
@@ -1278,7 +1299,8 @@ class WorldScene extends Phaser.Scene {
 
         if (kind === 'boatSite') {
             if (this.boatBuilt) {
-                this.showMessage('The boat is already complete and ready to sail!');
+                // DO016: Trigger cinematic ending when boat is complete
+                this.showMessage('The boat is ready! Press E to sail away.');
                 return;
             }
 
@@ -1322,13 +1344,7 @@ class WorldScene extends Phaser.Scene {
     }
 
     buildBoatStage() {
-        // DO015: Stage availability feedback
-        if (this.boatBuilt || this.boatStage >= BOAT_STAGES.length) {
-            if (!this.boatBuilt) {
-                this.showMessage('The boat is already complete and ready to sail!');
-            }
-            return;
-        }
+        if (this.boatBuilt || this.boatStage >= BOAT_STAGES.length) return;
 
         const stage = BOAT_STAGES[this.boatStage];
         const canBuild = Object.entries(stage.ingredients).every(
@@ -1355,13 +1371,154 @@ class WorldScene extends Phaser.Scene {
 
         if (this.boatStage >= BOAT_STAGES.length) {
             this.boatBuilt = true;
-            this.showMessage('Boat fully repaired! You can now sail across the sea.');
+            this.showMessage('Boat is ready! You can now sail away.');
         } else {
-            const nextStage = BOAT_STAGES[this.boatStage];
-            this.showMessage(`${stage.name} complete! Next: ${nextStage.name}.`);
+            this.showMessage(`${stage.name} complete! Next: ${BOAT_STAGES[this.boatStage].name}.`);
         }
 
         this.refreshBoatUI();
+    }
+
+    // DO016: Check if all win conditions are met
+    checkWinCondition() {
+        if (this.won || !this.boatBuilt) return;
+
+        // Player must be near a boat site to trigger the ending
+        const nearby = this.findNearbyObject();
+        if (nearby && nearby.getData('kind') === 'boatSite') {
+            this.won = true;
+            this.showEnding();
+        }
+    }
+
+    // DO016: Cinematic victory overlay
+    showEnding() {
+        if (this.endingActive) return;
+        this.endingActive = true;
+
+        // Dim the game world
+        this.tweens.add({
+            targets: this.cameras.main,
+            alpha: 0,
+            duration: 1500,
+            ease: 'Power2',
+        });
+
+        // Create ending overlay
+        const overlay = this.add.container(480, 300);
+        overlay.setScrollFactor(0);
+        overlay.setDepth(5000);
+
+        const bg = this.add.rectangle(0, 0, 960, 600, 0x0a1a12, 0);
+        overlay.add(bg);
+
+        const title = this.add.text(480, 200, 'THE LAST CONNECTION', {
+            fontFamily: 'sans-serif',
+            fontSize: '36px',
+            fontStyle: 'bold',
+            color: '#e2f0d8',
+        }).setOrigin(0.5);
+        overlay.add(title);
+
+        const subtitle = this.add.text(480, 260, 'You built the boat. You found your way to the coast.', {
+            fontFamily: 'sans-serif',
+            fontSize: '18px',
+            color: '#a8c0a0',
+        }).setOrigin(0.5);
+        overlay.add(subtitle);
+
+        const body = this.add.text(480, 320, `The horizon stretches endlessly ahead.
+All the resources you gathered, every path you walked,
+led to this moment.`, {
+            fontFamily: 'sans-serif',
+            fontSize: '15px',
+            color: '#7a9a72',
+            align: 'center',
+            wordWrap: { width: 600 },
+        }).setOrigin(0.5);
+        overlay.add(body);
+
+        const credits = this.add.text(480, 440, 'Press R to play again', {
+            fontFamily: 'sans-serif',
+            fontSize: '14px',
+            color: '#5a7a52',
+        }).setOrigin(0.5);
+        overlay.add(credits);
+
+        // Fade in overlay
+        this.tweens.add({
+            targets: bg,
+            alpha: 1,
+            duration: 1500,
+            delay: 500,
+            ease: 'Power2',
+        });
+
+        // Animate title fade in
+        title.setAlpha(0);
+        this.tweens.add({
+            targets: title,
+            alpha: 1,
+            duration: 800,
+            delay: 800,
+            ease: 'Power2',
+        });
+
+        subtitle.setAlpha(0);
+        this.tweens.add({
+            targets: subtitle,
+            alpha: 1,
+            duration: 800,
+            delay: 1200,
+            ease: 'Power2',
+        });
+
+        body.setAlpha(0);
+        this.tweens.add({
+            targets: body,
+            alpha: 1,
+            duration: 800,
+            delay: 1600,
+            ease: 'Power2',
+        });
+
+        credits.setAlpha(0);
+        this.tweens.add({
+            targets: credits,
+            alpha: 1,
+            duration: 800,
+            delay: 2400,
+            ease: 'Power2',
+        });
+
+        // Store overlay for cleanup
+        this.endingOverlay = overlay;
+
+        // Listen for restart
+        this.input.keyboard.on('keydown-R', () => {
+            this.restartGame();
+        });
+    }
+
+    // DO019: Reset game state for replay
+    restartGame() {
+        // Reset GameState
+        GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
+        GameState.equipment = { axe: false, gatheringTool: false };
+        GameState.boatStage = 0;
+        GameState.boatStagesCompleted = [false, false, false, false];
+        GameState.boatBuilt = false;
+
+        // Destroy ending overlay
+        if (this.endingOverlay) {
+            this.endingOverlay.destroy();
+            this.endingOverlay = null;
+        }
+        this.endingActive = false;
+        this.won = false;
+
+        // Restart from MAP1
+        this.scene.restart();
     }
 
     refreshBoatUI() {
@@ -1406,6 +1563,42 @@ class WorldScene extends Phaser.Scene {
         }
 
         this.boatText.setText(lines.join('\n'));
+    }
+
+    // DO018: Contextual hints based on game state
+    getContextualHints() {
+        const hints = [];
+
+        if (this.boatBuilt) {
+            hints.push('You built the boat — find the coast and press E to sail away.');
+            return hints;
+        }
+
+        if (this.boatStage < BOAT_STAGES.length) {
+            const stage = BOAT_STAGES[this.boatStage];
+            const missing = Object.entries(stage.ingredients)
+                .filter(([k, a]) => (this.inventory[k] || 0) < a)
+                .map(([k]) => ITEM_DEFS[k]?.name || k);
+            if (missing.length > 0) {
+                hints.push(`Need ${missing.join(', ')} for ${stage.name}. Search houses or gather from trees.`);
+            }
+        }
+
+        if (!this.workbenchDiscovered) {
+            hints.push('Find a workbench — search an abandoned house to discover one.');
+        }
+
+        if (this.currentMapId === 'MAP1') {
+            hints.push('Explore Home Island. Head east through the exit to reach new lands.');
+        } else if (this.currentMapId === 'MAP2') {
+            hints.push('The Abandoned Settlement holds scrap and rope. Keep going east.');
+        } else if (this.currentMapId === 'MAP3') {
+            hints.push('Industrial Ruins — scrap metal and fasteners are here. Head east to escape.');
+        } else if (this.currentMapId === 'MAP4') {
+            hints.push('Deep Wilderness is the last stop. Reach the eastern exit to find the coast.');
+        }
+
+        return hints;
     }
 
     isInsideIsland(x, y) {
@@ -1606,6 +1799,37 @@ class WorldScene extends Phaser.Scene {
             !this.boatBuilt
         ) {
             this.buildBoatStage();
+        }
+
+        // DO016: Trigger cinematic ending when boat is built and player presses E at boat site
+        if (
+            !this.craftingOpen &&
+            interactionDown &&
+            !this.interactionWasDown &&
+            this.nearbyObject?.getData('kind') === 'boatSite' &&
+            this.boatBuilt
+        ) {
+            this.showEnding();
+        }
+
+        this.checkWinCondition();
+
+        // DO018: Cycle contextual hints
+        if (!this.endingActive && !this.won) {
+            const hints = this.getContextualHints();
+            if (hints.length > 0) {
+                const idx = Math.floor(Date.now() / 8000) % hints.length;
+                if (this.hintText !== hints[idx]) {
+                    this.hintText = hints[idx];
+                    if (this.hintTimer) this.time.clearDelayCall(this.hintTimer);
+                    this.hintTimer = this.time.delayedCall(5000, () => {
+                        this.hintTextObj.setVisible(false);
+                        this.hintText = '';
+                    });
+                    this.hintTextObj.setText(hints[idx]);
+                    this.hintTextObj.setVisible(true);
+                }
+            }
         }
 
         this.interactionWasDown = interactionDown;

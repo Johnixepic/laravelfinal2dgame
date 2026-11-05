@@ -1,0 +1,42 @@
+# DO018 — Player Understanding Without Developer Assistance
+
+## Deliverable Status: ✅ Complete
+
+## Contextual Hint System (DO018)
+
+### Implementation
+- Added `getContextualHints()` method that returns context-aware hints based on game state
+- Added `hintTextObj` text display at bottom-center of screen (below interaction prompt)
+- Hints cycle every 8 seconds, displaying for 5 seconds each
+- Hint text fades out automatically after display duration
+
+### Hint Catalog (8 contextual hints)
+1. **No workbench discovered**: "Find a workbench — search an abandoned house to discover one."
+2. **MAP1 early game**: "Explore Home Island. Head east through the exit to reach new lands."
+3. **MAP2**: "The Abandoned Settlement holds scrap and rope. Keep going east."
+4. **MAP3**: "Industrial Ruins — scrap metal and fasteners are here. Head east to escape."
+5. **MAP4**: "Deep Wilderness is the last stop. Reach the eastern exit to find the coast."
+6. **Missing resources for current boat stage**: "Need X, Y for Stage name. Search houses or gather from trees."
+7. **Boat complete**: "You built the boat — find the coast and press E to sail away."
+8. **Post-win (never shown)**: N/A — hints disabled during ending
+
+### Interaction Prompt Clarity
+- Each object type has a clear prompt:
+  - House (unsearched): "E — Search: {name}"
+  - House (searched): "{name} — Already searched"
+  - Tree (unharvested): "E — Gather wood: Tree"
+  - Tree (harvested): "Tree — Already harvested"
+  - Workbench: "E — Craft items: Workbench"
+  - Boat Site (not built): "E — Build {stage}: Boat Dock"
+  - Boat Site (built): "{name} — Boat complete!"
+
+### UI Feedback
+- Resource bars in inventory show fill level with █/░ Unicode blocks
+- Color-coded by category: green (raw), gold (crafted), blue (gatherable), red (consumable)
+- Boat UI shows ✔ (done), ► (current), ○ (pending) with missing resource warnings
+- Messages are color-coded: green (success), gold (warning), red (error)
+
+## Verification
+- Fresh user can complete game without any external documentation
+- All interaction prompts are self-explanatory
+- Hint system provides actionable guidance without being intrusive

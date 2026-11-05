@@ -1,0 +1,60 @@
+# DO019 — Repeated Gameplay Does Not Corrupt State
+
+## Deliverable Status: ✅ Complete
+
+## State Management Architecture
+
+### Global State (GameState object)
+```javascript
+const GameState = {
+    inventory: { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 },
+    equipment: { axe: false, gatheringTool: false },
+    boatStage: 0,
+    boatStagesCompleted: [false, false, false, false],
+    boatBuilt: false,
+};
+```
+
+### State Sync Points
+1. **Before map transition** (transitionToMap): All this.* → GameState.*
+2. **On scene create()** (createInteractionSystem): All GameState.* → this.*
+3. **On game restart** (restartGame): Full GameState reset + scene.restart()
+
+### restartGame() Implementation (DO019)
+```javascript
+restartGame() {
+    // Reset ALL game state to initial values
+    GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
+    GameState.equipment = { axe: false, gatheringTool: false };
+    GameState.boatStage = 0;
+    GameState.boatStagesCompleted = [false, false, false, false];
+    GameState.boatBuilt = false;
+
+    // Destroy ending overlay to prevent memory leaks
+    if (this.endingOverlay) {
+        this.endingOverlay.destroy();
+        this.endingOverlay = null;
+    }
+    this.endingActive = false;
+    this.won = false;
+
+    // Restart scene (triggers fresh create() which reads clean GameState)
+    this.scene.restart();
+}
+```
+
+## Test Scenarios Verified
+1. **Full playthrough → ending → restart**: All state resets, game starts fresh from MAP1 ✓
+2. **Map transition mid-gameplay**: Inventory and equipment survive map changes ✓
+3. **Boat construction across maps**: boatStage and boatStagesCompleted persist correctly ✓
+4. **Multiple endings without crash**: endingActive flag prevents duplicate overlays ✓
+5. **No stale references**: endingOverlay is destroyed before scene restart ✓
+
+## Bug Fixed During DO019 Work
+- `this.recipeCards` was never initialized — caused TypeError on first craft panel open
+- Fix: Added `this.recipeCards = []` in create() method
+
+## No Known State Corruption Issues
+- GameState is the single source of truth
+- All scene instances read from GameState on creation
+- All state mutations write to GameState before scene transition

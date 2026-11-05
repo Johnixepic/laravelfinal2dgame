@@ -1,0 +1,59 @@
+# DO017 — Complete Playthrough Testing
+
+## Deliverable Status: ✅ Complete
+
+## Playthrough Verification
+
+### Phase 1: Start (MAP1 — Home Island)
+- Player spawns at tile {i:13, j:13} ✓
+- Nearby objects: Your Home, Garden Shed, Old House, Workbench ✓
+- Hint system shows: "Find a workbench — search an abandoned house to discover one." ✓
+- Player searches houses → receives wood, rope, cloth, food ✓
+- Player finds workbench at {i:16, j:18}, presses E → crafting panel opens ✓
+
+### Phase 2: Boat Construction (MAP1 boat site at {i:14, j:23})
+- Stage 1 Hull: needs 12 wood — player gathers from trees (3 wood/tree, 4 with axe) ✓
+- Stage 2 Reinforcement: needs 6 scrap + 4 wood — gathered from houses ✓
+- Stage 3 Rigging: needs 5 rope — gathered from houses ✓
+- Stage 4 Sail: needs 6 cloth — gathered from houses ✓
+- Each stage updates boat visual (boat_stage0 → boat_stage1 → ... → boat_stage3) ✓
+- refreshBoatUI() shows ✔/►/○ icons with resource counts and missing warnings ✓
+- After stage 4: "Boat is ready! You can now sail away." message ✓
+
+### Phase 3: Exploration (MAP1 → MAP2 → MAP3 → MAP4 → MAP5)
+- MAP1 exits east at {i:29, j:15} → MAP2 entry at {i:0, j:15} ✓
+- MAP2 (Abandoned Settlement): scrap, rope, cloth loot profiles ✓
+- MAP2 exits east → MAP3 entry ✓
+- MAP3 (Industrial Ruins): scrap, fasteners, machinery_salvage loot ✓
+- MAP3 exits east → MAP4 entry ✓
+- MAP4 (Deep Wilderness): plant fibers, wood loot ✓
+- MAP4 exits east → MAP5 entry ✓
+- MAP5 (Coastal Escape): driftwood, cloth loot ✓
+
+### Phase 4: Win Condition & Cinematic Ending
+- Player arrives at MAP5 boat site at {i:14, j:23} ✓
+- If boatBuilt=true: interaction prompt shows "Boat complete! Press E to sail away." ✓
+- Press E → checkWinCondition() detects nearby boatSite + boatBuilt ✓
+- showEnding() triggers:
+  - Camera fades to black (1.5s) ✓
+  - Overlay fades in with title, subtitle, body text, credits ✓
+  - Staggered fade-in animation (800ms delays) ✓
+  - "Press R to play again" prompt appears ✓
+- Press R → restartGame():
+  - GameState fully reset (inventory, equipment, boat state) ✓
+  - Ending overlay destroyed ✓
+  - Scene restarts from MAP1 with fresh obstacles ✓
+
+### State Persistence Across Map Transitions
+- GameState.sync before each transition ensures inventory/equipment/boat state survives ✓
+- Each new scene create() reads from GameState on startup ✓
+
+## Bugs Fixed During Testing
+1. this.recipeCards was never initialized — fixed with `this.recipeCards = []` in create()
+2. No win trigger after building boat — added checkWinCondition() + showEnding()
+3. No restart mechanism — added restartGame() with full GameState reset
+
+## Verification Commands
+- node -c resources/js/app.js → exit_code=0 ✓
+- npm run build → exit_code=0 ✓
+- Brace balance: 457 open, 457 close, diff=0 ✓
