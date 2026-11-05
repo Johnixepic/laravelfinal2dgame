@@ -2001,7 +2001,7 @@ led to this moment.`, {
                 const idx = Math.floor(Date.now() / 8000) % hints.length;
                 if (this.hintText !== hints[idx]) {
                     this.hintText = hints[idx];
-                    if (this.hintTimer) this.time.clearDelayCall(this.hintTimer);
+                    if (this.hintTimer) this.time.removeEvent(this.hintTimer);
                     this.hintTimer = this.time.delayedCall(5000, () => {
                         this.hintTextObj.setVisible(false);
                         this.hintText = '';
