@@ -41,7 +41,10 @@ const MAPS = {
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP2', entryTile: { i: 0, j: 15 } },
         ],
-                zones: {
+                lootProfile: {
+                            wood:      1.5, branches: 1.0, cloth: 0.3, food: 0.3,
+                        },
+                        zones: {
             woodland:   { minI: 0, maxI: 12, minJ: 0, maxJ: 12 },
             abandoned:  { minI: 0, maxI: 15, minJ: 17, maxJ: 29 },
             industrial: { minI: 15, maxI: 29, minJ: 0, maxJ: 12 },
@@ -70,7 +73,10 @@ const MAPS = {
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP3', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 28, j: 15 } },
         ],
-                zones: {
+                lootProfile: {
+                            cloth:     1.5, food: 1.0, scrap: 1.2, fibers: 1.0,
+                        },
+                        zones: {
             abandoned:  { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
             overgrown:  { minI: 0, maxI: 8, minJ: 0, maxJ: 15 },
         },
@@ -95,7 +101,10 @@ const MAPS = {
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP4', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP2', entryTile: { i: 28, j: 15 } },
         ],
-                zones: {
+                lootProfile: {
+                            scrap:     2.0, fasteners: 1.5, rope: 0.8,
+                        },
+                        zones: {
             industrial: { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
             overgrown:  { minI: 18, maxI: 29, minJ: 18, maxJ: 29 },
         },
@@ -120,7 +129,10 @@ const MAPS = {
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP5', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP3', entryTile: { i: 28, j: 15 } },
         ],
-                zones: {
+                lootProfile: {
+                            wood:      1.8, branches: 1.5, fibers: 1.5, food: 0.4,
+                        },
+                        zones: {
             woodland:   { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
             overgrown:  { minI: 0, maxI: 12, minJ: 0, maxJ: 29 },
         },
@@ -141,7 +153,10 @@ const MAPS = {
             water: 0x4a8ab5,
             shore:      [0xc5b69a, 0xb5a78a],
         },
-        exits: [], // Final map — boat site for DO010
+        lootProfile: {
+                            driftwood: 2.0, cloth: 1.0, rope: 0.5,
+                        },
+                        exits: [], // Final map — boat site for DO010
         zones: {
             shore:      { minI: 20, maxI: 29, minJ: 0, maxJ: 29 },
             overgrown:  { minI: 0, maxI: 10, minJ: 0, maxJ: 15 },
@@ -170,9 +185,7 @@ const MAP_OBSTACLES = {
             { i: 22, j: 7, name: 'Scrap Yard', kind: 'house', searchKey: 'searched' },
             { i: 25, j: 10, name: 'Old Foundry', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [
-            { i: 24, j: 5 },    // Industrial Ruins — scrap-focused crafting
-        ],
+        workbenches: [],
         trees: [
             // Woodland (northwest) — dense, wood-heavy
             [3, 4], [4, 7], [5, 3], [6, 9], [7, 5], [8, 2], [9, 10],
@@ -190,6 +203,10 @@ const MAP_OBSTACLES = {
             { i: 18, j: 8, name: 'Old Store', kind: 'house', searchKey: 'searched' },
             { i: 12, j: 20, name: 'Abandoned Barn', kind: 'house', searchKey: 'searched' },
             { i: 22, j: 18, name: 'Derelict House', kind: 'house', searchKey: 'searched' },
+        ],
+        // Designated house for workbench discovery — enters indoor mode
+        indoorHouses: [
+            { i: 18, j: 8, name: 'Old Store', entryTile: { i: 18, j: 9 }, indoorMap: 'INDOOR_MAP' },
         ],
         workbenches: [{ i: 15, j: 15 }],
         trees: [
@@ -400,11 +417,16 @@ const LOOT_TABLES = {
 };
 
 const ITEM_DEFS = {
-    wood:   { name: 'Wood',       limit: 30, desc: 'Basic building material.' },
-    scrap:  { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.' },
-    rope:   { name: 'Rope',       limit: 10, desc: 'Crafting and boat construction.' },
-    cloth:  { name: 'Cloth',      limit: 10, desc: 'Sails and repairs.' },
-    food:   { name: 'Food',       limit: 10, desc: 'Future survival mechanic.' },
+    wood:      { name: 'Wood',        limit: 30, desc: 'Basic building material.' },
+    branches:  { name: 'Branches',    limit: 20, desc: 'Crafting fibers and rope.' },
+    scrap:     { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.' },
+    fasteners: { name: 'Fasteners',   limit: 15, desc: 'Metal parts for reinforcement.' },
+    rope:      { name: 'Rope',        limit: 10, desc: 'Crafting and boat construction.' },
+    cloth:     { name: 'Cloth',       limit: 10, desc: 'Sails and repairs.' },
+    fibers:    { name: 'Fibers',      limit: 15, desc: 'Plant materials for crafting.' },
+    sailcloth: { name: 'Sailcloth',   limit: 8,  desc: 'Treated cloth for boat sails.' },
+    driftwood: { name: 'Driftwood',   limit: 15, desc: 'Washed-up wood from the shore.' },
+    food:      { name: 'Food',        limit: 10, desc: 'Rations for the journey.' },
 };
 
 const BOAT_STAGES = [
@@ -1385,7 +1407,28 @@ class WorldScene extends Phaser.Scene {
             object.setData('searched', true);
 
             const table = LOOT_TABLES[name] || LOOT_TABLES['Abandoned House'];
-            const loot = Phaser.Math.RND.pick(table);
+            // Weight by map loot profile for cross-map consistency
+            const profile = this.mapDef.lootProfile || {};
+            let loot;
+            if (Object.keys(profile).length > 0) {
+                // Filter and weight loot table entries by profile
+                const weighted = table.map(entry => {
+                    let score = 1;
+                    for (const [item, amount] of Object.entries(entry)) {
+                        if (profile[item]) score *= profile[item];
+                    }
+                    return { entry, score };
+                });
+                const total = weighted.reduce((s, w) => s + w.score, 0);
+                let r = Math.random() * total;
+                for (const w of weighted) {
+                    r -= w.score;
+                    if (r <= 0) { loot = w.entry; break; }
+                }
+                if (!loot) loot = table[0];
+            } else {
+                loot = Phaser.Math.RND.pick(table);
+            }
 
             for (const [item, amount] of Object.entries(loot)) {
                 this.addItem(item, amount);
@@ -1436,14 +1479,28 @@ class WorldScene extends Phaser.Scene {
             const tile = this.playerTile();
             const zone = this.getZone(tile.i, tile.j);
 
-            // Zone-aware wood yields
-            let woodAmount = 3;
-            if (zone === 'woodland') woodAmount = 4;       // Dense forest
-            else if (zone === 'overgrown') woodAmount = 4; // Overgrown with thick trees
-            else if (zone === 'shore') woodAmount = 2;     // Scrubby coastal pines
+            // Map-aware loot profile yields
+            const profile = this.mapDef.lootProfile || {};
+            let woodAmount = Math.max(1, Math.round(3 * (profile.wood || 1)));
+            if (zone === 'woodland') woodAmount = Math.max(woodAmount, Math.round(4 * (profile.wood || 1)));
+            else if (zone === 'overgrown') woodAmount = Math.max(woodAmount, Math.round(4 * (profile.wood || 1)));
+            else if (zone === 'shore') woodAmount = Math.max(woodAmount, Math.round(2 * (profile.wood || 1)));
 
-            if (this.equipment.axe) woodAmount += 1;
-            this.addItem('wood', woodAmount);
+            const branchesAmount = Math.max(0, Math.round(2 * (profile.branches || 0)));
+            const fibersAmount = Math.max(0, Math.round(1 * (profile.fibers || 0)));
+
+            let result = this.addItem('wood', woodAmount);
+            if (this.equipment.axe) {
+                const ax = this.addItem('wood', 1);
+                result.message += ' ';
+            }
+            if (branchesAmount > 0) {
+                const br = this.addItem('branches', branchesAmount);
+                result.message += br.message.replace('Added', 'And found');
+            }
+            if (fibersAmount > 0) {
+                this.addItem('fibers', fibersAmount);
+            }
         }
     }
 
@@ -1757,11 +1814,18 @@ class WorldScene extends Phaser.Scene {
             this.keys.E.isDown &&
             !this.interactionWasDown &&
             this.nearbyObject &&
-            this.nearbyObject.getData('kind') === 'house' &&
-            this.nearbyObject.getData('name') === 'Your Home'
+            this.nearbyObject.getData('kind') === 'house'
         ) {
-            this.setIndoorMode(true);
-            this.showMessage('Entered your home.');
+            const name = this.nearbyObject.getData('name');
+            // Check for designated indoor houses (workbench discovery on MAP2)
+            const indoorHouse = (this.mapDef.indoorHouses || []).find(h => h.i === tile.i && h.j === tile.j);
+            if (indoorHouse) {
+                this.showMessage('You push open the heavy door and step inside.');
+                this.setIndoorMode(true);
+            } else if (name === 'Your Home') {
+                this.setIndoorMode(true);
+                this.showMessage('Entered your home.');
+            }
         }
 
         const interactionDown = this.keys.E.isDown;

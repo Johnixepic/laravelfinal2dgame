@@ -1,0 +1,44 @@
+DEVELOPMENT ORDER 014 — COMPLETE
+
+Task: Resource Gathering and Loot Progression audit + fixes.
+
+STATUS: ALL TASKS COMPLETED
+
+Gaps Found and Fixed:
+1. ITEM_DEFS had only 5 resources (wood, scrap, rope, cloth, food).
+   Expanded to 10 resources: wood, branches, scrap, fasteners, rope,
+   cloth, fibers, sailcloth, driftwood, food.
+
+2. No per-map loot profiles existed. All buildings dropped identical
+   items regardless of map. Added 'lootProfile' to each map definition
+   with weighted drop rates:
+   - MAP1 (Home District): wood 1.5x, branches 1.0x, cloth/food 0.3x
+   - MAP2 (Abandoned Settlement): cloth 1.5x, food 1.0x, scrap 1.2x, fibers 1.0x
+   - MAP3 (Industrial Ruins): scrap 2.0x, fasteners 1.5x, rope 0.8x
+   - MAP4 (Deep Wilderness): wood 1.8x, branches 1.5x, fibers 1.5x, food 0.4x
+   - MAP5 (Coastal Shore): driftwood 2.0x, cloth 1.0x, rope 0.5x
+
+3. Tree harvesting used hardcoded zone-aware yields. Updated to use
+   map lootProfile for wood amount and added branches/fibers drops.
+
+4. Building search used flat random picks from LOOT_TABLES. Added
+   profile-weighted selection so cross-map progression feels natural.
+
+Architecture:
+- 10 resource types with distinct identities and limits
+- Per-map lootProfile defines drop-rate multipliers
+- gatherResource() uses mapDef.lootProfile for variable yields
+- Building search weights loot table entries by matching profile keys
+- All resources persist via GameState across map transitions
+
+Verification:
+- npm run build: PASS (return code 0)
+- Node syntax check: PASS
+- Brace balance: 0 (correct)
+- All 10 required resources defined: YES
+- All 5 maps have lootProfile: YES
+- Building loot uses profile weighting: YES
+
+Next: Proceed to DO015 — Crafting System and Boat Components.
+
+Source: /mnt/WorkDisk/3rd Year School/WebProg/Final2DGame/2DGame/resources/js/app.js

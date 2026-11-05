@@ -1,0 +1,43 @@
+DEVELOPMENT ORDER 013 — COMPLETE
+
+Task: House Interior and Workbench Discovery audit + fixes.
+
+STATUS: ALL TASKS COMPLETED
+
+Gaps Found and Fixed:
+1. MAP1 had an outdoor workbench at {i:24,j:5} that bypassed the indoor
+   discovery gate. Removed it — all workbench access now requires entering
+   a house and discovering it indoors.
+
+2. No MAP2 house had indoor entry capability. Added 'indoorHouses' array
+   to MAP2's map definition, designating the Old Store at {i:18,j:8} as
+   the workbench discovery house.
+
+3. Updated interactWith() to check for designated indoorHouses before
+   falling back to the Your Home handler. Indoor houses show a unique
+   message and trigger setIndoorMode(true).
+
+Architecture:
+- INDOOR_MAP constant defines a 5x4 indoor grid with walls, door, workbench
+- setIndoorMode() toggles between outdoor/indoor with camera zoom (2x in / 1.5x out)
+- workbenchDiscovered flag gates crafting access until the player walks up to it
+- GameState.workbenchDiscovered persists across map transitions
+
+Verification:
+- npm run build: PASS (return code 0)
+- Node syntax check: PASS
+- Brace balance: 0 (correct)
+- MAP1 outdoor workbench removed: YES
+- MAP2 indoorHouses defined: YES
+- indoorHouse handling in interactWith: YES
+
+Gameplay Flow (corrected):
+1. Start on MAP1 — no workbench available outdoors
+2. Travel to MAP2 (Abandoned Settlement)
+3. Enter the Old Store at {i:18,j:8} → indoor mode activates
+4. Walk to the workbench inside and press E to discover it
+5. Workbench discovery unlocks crafting everywhere
+
+Next: Proceed to DO014 — Resource Gathering and Loot Progression.
+
+Source: /mnt/WorkDisk/3rd Year School/WebProg/Final2DGame/2DGame/resources/js/app.js
