@@ -1,0 +1,35 @@
+DEVELOPMENT ORDER 015 — COMPLETE
+
+Task: Crafting System and Boat Components audit + fixes.
+
+STATUS: ALL TASKS COMPLETED
+
+Gaps Found and Fixed:
+1. Added boatProgressText UI element for component tracking display.
+
+2. Updated HUD to show component progress (✓/○ per stage) instead of 
+   simple "Stage X/4" counter. Visual feedback shows which components
+   are completed vs pending.
+
+3. Integrated workbench interaction with boat build stages — updated
+   completion feedback:
+   - Partial completion: "X complete! Next: Y."
+   - Full completion: "Boat fully repaired! You can now sail across the sea."
+
+4. Added stage availability check at boat site (shows message when
+   attempting to build completed/invalid stage).
+
+Architecture:
+- 4 boat stages: Hull → Reinforcement → Rigging → Sail
+- Each stage has specific resource costs from ITEM_DEFS
+- boatStagesCompleted array tracks progress per-stage
+- GameState persists across map transitions
+- Visual feedback via HUD component display and text messages
+
+Verification:
+- npm run build: PASS (return code 0)
+- Node syntax check: PASS
+- Brace balance: 0 (correct)
+- All features implemented: YES
+
+Next: Proceed to DO016 — Boat Completion and Sea Crossing.
