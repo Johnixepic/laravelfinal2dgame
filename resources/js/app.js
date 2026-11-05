@@ -36,7 +36,7 @@ const MAPS = {
             shore: 0xc2b280,
         },
         exits: [
-            { fromTile: { i: 29, j: 15 }, toMap: 'MAP2', entryTile: { i: 0, j: 15 } },
+            { fromTile: { i: 28, j: 15 }, toMap: 'MAP2', entryTile: { i: 0, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [
@@ -128,6 +128,9 @@ const MAP_OBSTACLES = {
             { i: 20, j: 9, name: 'Abandoned House', kind: 'house', searchKey: 'searched' },
             { i: 10, j: 21, name: 'Garden Shed', kind: 'house', searchKey: 'searched' },
             { i: 21, j: 20, name: 'Old House', kind: 'house', searchKey: 'searched' },
+        ],
+        workbenches: [
+            { i: 15, j: 15 },
         ],
         trees: [
             [5, 8], [7, 7], [6, 11], [8, 19],
