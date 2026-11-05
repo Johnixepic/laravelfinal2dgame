@@ -12,8 +12,6 @@ const GameState = {
     boatStage: 0,
     boatStagesCompleted: [false, false, false, false],
     boatBuilt: false,
-    workbenchDiscovered: false,
-    won: false,
 };
 
 // ============================================================
@@ -30,27 +28,15 @@ const MAPS = {
             road: 0x77776a,
             edge: 0xb5a77b,
             water: 0x3a6b8a,
-            // Zone-specific colors
-            woodland:   [0x2d5a27, 0x1e4a1a],
-            abandoned:  [0x8a8a6a, 0x7a7a5a],
-            industrial: [0x6a5a4a, 0x5a4a3a],
-            overgrown:  [0x4a7a3a, 0x3a6a2a],
-            shore:      [0xc5b69a, 0xb5a78a],
+            woodland: 0x5a8a5a,
+            abandoned: 0x8a7a5a,
+            industrial: 0x7a7a7a,
+            overgrown: 0x4a6a4a,
+            shore: 0xc2b280,
         },
-        // Paths are edges of the grid; exits at specific tile coords
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP2', entryTile: { i: 0, j: 15 } },
         ],
-                lootProfile: {
-                            wood:      1.5, branches: 1.0, cloth: 0.3, food: 0.3,
-                        },
-                        zones: {
-            woodland:   { minI: 0, maxI: 12, minJ: 0, maxJ: 12 },
-            abandoned:  { minI: 0, maxI: 15, minJ: 17, maxJ: 29 },
-            industrial: { minI: 15, maxI: 29, minJ: 0, maxJ: 12 },
-            overgrown:  { minI: 10, maxI: 20, minJ: 10, maxJ: 20 },
-            homeDistrict: { minI: 9, maxI: 19, minJ: 9, maxJ: 19 },
-        },
         fogMargin: 2,
         landmarks: [
             { tile: { i: 13, j: 13 }, label: 'Start' },
@@ -67,23 +53,13 @@ const MAPS = {
             road: 0x6a6a5a,
             edge: 0x9a8a6a,
             water: 0x3a6b8a,
-            shore:      [0xc5b69a, 0xb5a78a],
         },
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP3', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 28, j: 15 } },
         ],
-                lootProfile: {
-                            cloth:     1.5, food: 1.0, scrap: 1.2, fibers: 1.0,
-                        },
-                        zones: {
-            abandoned:  { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
-            overgrown:  { minI: 0, maxI: 8, minJ: 0, maxJ: 15 },
-        },
         fogMargin: 2,
-        landmarks: [
-            { tile: { i: 15, j: 20 }, label: 'Settlement Edge' },
-        ],
+        landmarks: [],
     },
     MAP3: {
         id: 'MAP3',
@@ -95,23 +71,13 @@ const MAPS = {
             road: 0x4a4a3a,
             edge: 0x7a7a6a,
             water: 0x3a6b8a,
-            shore:      [0xc5b69a, 0xb5a78a],
         },
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP4', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP2', entryTile: { i: 28, j: 15 } },
         ],
-                lootProfile: {
-                            scrap:     2.0, fasteners: 1.5, rope: 0.8,
-                        },
-                        zones: {
-            industrial: { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
-            overgrown:  { minI: 18, maxI: 29, minJ: 18, maxJ: 29 },
-        },
         fogMargin: 2,
-        landmarks: [
-            { tile: { i: 15, j: 20 }, label: 'Ruins Entrance' },
-        ],
+        landmarks: [],
     },
     MAP4: {
         id: 'MAP4',
@@ -123,23 +89,13 @@ const MAPS = {
             road: 0x3a4a3a,
             edge: 0x4a5a4a,
             water: 0x3a6b8a,
-            shore:      [0xc5b69a, 0xb5a78a],
         },
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP5', entryTile: { i: 0, j: 15 } },
             { fromTile: { i: 0, j: 15 }, toMap: 'MAP3', entryTile: { i: 28, j: 15 } },
         ],
-                lootProfile: {
-                            wood:      1.8, branches: 1.5, fibers: 1.5, food: 0.4,
-                        },
-                        zones: {
-            woodland:   { minI: 0, maxI: 29, minJ: 0, maxJ: 29 },
-            overgrown:  { minI: 0, maxI: 12, minJ: 0, maxJ: 29 },
-        },
         fogMargin: 2,
-        landmarks: [
-            { tile: { i: 15, j: 20 }, label: 'Wilderness Trail' },
-        ],
+        landmarks: [],
     },
     MAP5: {
         id: 'MAP5',
@@ -151,16 +107,8 @@ const MAPS = {
             road: 0x9a8a6a,
             edge: 0xc5b69a,
             water: 0x4a8ab5,
-            shore:      [0xc5b69a, 0xb5a78a],
         },
-        lootProfile: {
-                            driftwood: 2.0, cloth: 1.0, rope: 0.5,
-                        },
-                        exits: [], // Final map — boat site for DO010
-        zones: {
-            shore:      { minI: 20, maxI: 29, minJ: 0, maxJ: 29 },
-            overgrown:  { minI: 0, maxI: 10, minJ: 0, maxJ: 15 },
-        },
+        exits: [],
         fogMargin: 2,
         landmarks: [
             { tile: { i: 14, j: 23 }, label: 'Boat Site' },
@@ -174,28 +122,18 @@ const MAPS = {
 const MAP_OBSTACLES = {
     MAP1: {
         buildings: [
-            // Home District (center-north) — balanced loot
-            { i: 13, j: 13, name: 'Your Home', kind: 'house', searchKey: 'searched' },
+            { i: 10, j: 11, name: 'Your Home', kind: 'house', searchKey: 'searched' },
+            { i: 20, j: 9, name: 'Abandoned House', kind: 'house', searchKey: 'searched' },
             { i: 10, j: 21, name: 'Garden Shed', kind: 'house', searchKey: 'searched' },
             { i: 21, j: 20, name: 'Old House', kind: 'house', searchKey: 'searched' },
-            // Abandoned Residential (northeast) — cloth/rope heavy
-            { i: 5, j: 24, name: 'Ruined Cottage', kind: 'house', searchKey: 'searched' },
-            { i: 14, j: 26, name: 'Shelter Ruins', kind: 'house', searchKey: 'searched' },
-            // Industrial Ruins (southwest) — scrap heavy
-            { i: 22, j: 7, name: 'Scrap Yard', kind: 'house', searchKey: 'searched' },
-            { i: 25, j: 10, name: 'Old Foundry', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [],
+        workbenches: [{ i: 16, j: 18 }],
         trees: [
-            // Woodland (northwest) — dense, wood-heavy
-            [3, 4], [4, 7], [5, 3], [6, 9], [7, 5], [8, 2], [9, 10],
-            [10, 4], [11, 8], [12, 3], [3, 10], [5, 11], [7, 2], [9, 6],
-            // Overgrown Interior — scattered
-            [11, 12], [14, 14], [17, 16], [19, 11], [13, 18], [16, 20],
-            // Southeastern Shoreline — sparse
-            [26, 20], [27, 22], [25, 24], [28, 18],
+            [5, 8], [7, 7], [6, 11], [8, 19],
+            [5, 21], [23, 8], [24, 12], [23, 23],
+            [18, 24], [12, 24], [25, 18], [7, 24],
         ],
-
+        boatSite: { i: 14, j: 23 },
     },
     MAP2: {
         buildings: [
@@ -203,10 +141,6 @@ const MAP_OBSTACLES = {
             { i: 18, j: 8, name: 'Old Store', kind: 'house', searchKey: 'searched' },
             { i: 12, j: 20, name: 'Abandoned Barn', kind: 'house', searchKey: 'searched' },
             { i: 22, j: 18, name: 'Derelict House', kind: 'house', searchKey: 'searched' },
-        ],
-        // Designated house for workbench discovery — enters indoor mode
-        indoorHouses: [
-            { i: 18, j: 8, name: 'Old Store', entryTile: { i: 18, j: 9 }, indoorMap: 'INDOOR_MAP' },
         ],
         workbenches: [{ i: 15, j: 15 }],
         trees: [
@@ -261,34 +195,6 @@ const MAP_OBSTACLES = {
         boatSite: { i: 14, j: 23 },
     },
 };
-
-// ============================================================
-// INDOOR MAP — "Your Home" interior (placed near outdoor house at 13,13)
-// ============================================================
-const INDOOR_MAP = {
-    cols: 5,
-    rows: 4,
-    originX: 960,
-    originY: 500,
-    // Wall tiles (i, j) — perimeter blocks
-    walls: [
-        [0,0],[1,0],[2,0],[3,0],[4,0],
-        [0,1],[4,1],
-        [0,2],[4,2],
-        [0,3],[1,3],[2,3],[3,3],[4,3],
-    ],
-    // Door tile — interact here to exit
-    door: { i: 2, j: 3 },
-    // Workbench tile — discover by walking up to it
-    workbench: { i: 2, j: 1 },
-};
-
-function indoorTilePosition(i, j) {
-    return {
-        x: INDOOR_MAP.originX + (i - 2) * TILE_W,
-        y: INDOOR_MAP.originY + j * TILE_H,
-    };
-}
 
 // ============================================================
 // LOOT TABLES — keyed by building name
@@ -392,48 +298,28 @@ const LOOT_TABLES = {
         { wood: 1, food: 1 },
         { rope: 1, cloth: 1 },
     ],
-    // Abandoned Residential — cloth/rope heavy
-    'Ruined Cottage': [
-        { cloth: 2, rope: 1 },
-        { cloth: 1, food: 1 },
-        { rope: 2, cloth: 1 },
-    ],
-    'Shelter Ruins': [
-        { rope: 2, cloth: 1 },
-        { cloth: 1, food: 1 },
-        { rope: 1, cloth: 1 },
-    ],
-    // Industrial Ruins — scrap heavy
-    'Scrap Yard': [
-        { scrap: 4 },
-        { scrap: 2, wood: 1 },
-        { scrap: 3, rope: 1 },
-    ],
-    'Old Foundry': [
-        { scrap: 3, wood: 1 },
-        { scrap: 2, rope: 1 },
-        { scrap: 4 },
-    ],
 };
 
 const ITEM_DEFS = {
-    wood:      { name: 'Wood',        limit: 30, desc: 'Basic building material.' },
-    branches:  { name: 'Branches',    limit: 20, desc: 'Crafting fibers and rope.' },
-    scrap:     { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.' },
-    fasteners: { name: 'Fasteners',   limit: 15, desc: 'Metal parts for reinforcement.' },
-    rope:      { name: 'Rope',        limit: 10, desc: 'Crafting and boat construction.' },
-    cloth:     { name: 'Cloth',       limit: 10, desc: 'Sails and repairs.' },
-    fibers:    { name: 'Fibers',      limit: 15, desc: 'Plant materials for crafting.' },
-    sailcloth: { name: 'Sailcloth',   limit: 8,  desc: 'Treated cloth for boat sails.' },
-    driftwood: { name: 'Driftwood',   limit: 15, desc: 'Washed-up wood from the shore.' },
-    food:      { name: 'Food',        limit: 10, desc: 'Rations for the journey.' },
+    wood: { name: 'Wood', limit: 30, desc: 'Basic building material.', category: 'raw-material' },
+    scrap: { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.', category: 'raw-material' },
+    rope: { name: 'Rope', limit: 10, desc: 'Crafting and boat construction.', category: 'raw-material' },
+    cloth: { name: 'Cloth', limit: 10, desc: 'Sails and repairs.', category: 'raw-material' },
+    food: { name: 'Food', limit: 10, desc: 'Future survival mechanic.', category: 'consumable' },
+    branches: { name: 'Branches', limit: 15, desc: 'Small sticks for kindling.', category: 'gatherable' },
+    driftwood: { name: 'Driftwood', limit: 15, desc: 'Weathered wood from the shore.', category: 'gatherable' },
+    plant_materials: { name: 'Plant Fibers', limit: 15, desc: 'Useful for binding and rope.', category: 'gatherable' },
+    household_scrap: { name: 'Household Scrap', limit: 10, desc: 'Miscellaneous salvaged items.', category: 'gatherable' },
+    fasteners: { name: 'Fasteners', limit: 10, desc: 'Nails and screws for construction.', category: 'crafted-component' },
+    machinery_salvage: { name: 'Machinery Salvage', limit: 8, desc: 'Gears and metal parts.', category: 'crafted-component' },
+    fibers: { name: 'Fibers', limit: 15, desc: 'Natural fibers for crafting.', category: 'gatherable' },
 };
 
 const BOAT_STAGES = [
-    { id: 'hull',         name: 'Hull',          ingredients: { wood: 12 }, desc: 'Lay the hull frame from timber.' },
+    { id: 'hull', name: 'Hull', ingredients: { wood: 12 }, desc: 'Lay the hull frame from timber.' },
     { id: 'reinforcement', name: 'Reinforcement', ingredients: { scrap: 6, wood: 4 }, desc: 'Plate the hull with scrap metal and wood braces.' },
-    { id: 'rigging',      name: 'Rigging',       ingredients: { rope: 5 }, desc: 'Rig the mast and control lines.' },
-    { id: 'sail',         name: 'Sail',          ingredients: { cloth: 6 }, desc: 'Hoist the sail and prepare for departure.' },
+    { id: 'rigging', name: 'Rigging', ingredients: { rope: 5 }, desc: 'Rig the mast and control lines.' },
+    { id: 'sail', name: 'Sail', ingredients: { cloth: 6 }, desc: 'Hoist the sail and prepare for departure.' },
 ];
 
 const RECIPES = [
@@ -465,7 +351,63 @@ const RECIPES = [
         ingredients: { scrap: 4, cloth: 2 },
         desc: 'Emergency repairs and sail patches.',
     },
+    // DO009: New recipes requiring workbench
+    {
+        id: 'plank',
+        name: 'Plank',
+        result: { type: 'item', key: 'plank', amount: 1 },
+        ingredients: { wood: 4 },
+        desc: 'Processed lumber. Requires workbench.',
+        workbenchRequired: true,
+    },
+    {
+        id: 'fasteners',
+        name: 'Fasteners',
+        result: { type: 'item', key: 'fasteners', amount: 2 },
+        ingredients: { scrap: 3 },
+        desc: 'Nails and screws. Requires workbench.',
+        workbenchRequired: true,
+    },
+    {
+        id: 'sailcloth',
+        name: 'Sailcloth',
+        result: { type: 'item', key: 'sailcloth', amount: 1 },
+        ingredients: { cloth: 4, rope: 2 },
+        desc: 'Treated canvas for sails. Requires workbench.',
+        workbenchRequired: true,
+    },
 ];
+
+// ============================================================
+// MAP-SPECIFIC LOOT PROFILES (DO007)
+// ============================================================
+const MAP_LOOT_PROFILES = {
+    MAP1: {
+        trees: ['wood'],
+        buildings: ['wood', 'rope', 'cloth'],
+        gatherables: ['branches'],
+    },
+    MAP2: {
+        trees: ['branches', 'plant_materials'],
+        buildings: ['cloth', 'rope', 'household_scrap'],
+        gatherables: ['fibers', 'plant_materials'],
+    },
+    MAP3: {
+        trees: ['branches'],
+        buildings: ['scrap', 'fasteners', 'machinery_salvage'],
+        gatherables: ['fasteners', 'machinery_salvage'],
+    },
+    MAP4: {
+        trees: ['wood'],
+        buildings: ['plant_materials', 'fibers'],
+        gatherables: ['plant_materials', 'fibers'],
+    },
+    MAP5: {
+        trees: ['driftwood'],
+        buildings: ['cloth', 'driftwood'],
+        gatherables: ['driftwood', 'fibers'],
+    },
+};
 
 // ============================================================
 // WORLD SCENE
@@ -478,16 +420,26 @@ class WorldScene extends Phaser.Scene {
     preload() {
     }
 
-    create() {
-        const startMapId = this.data?.startMapId || 'MAP1';
-        const startTile = this.data?.startTile || null;
-        const mapDef = MAPS[startMapId];
+    create(data = {}) {
+        const startMapId = typeof data === 'string'
+            ? data
+            : data.startMapId || 'MAP1';
+
+        const startTile = typeof data === 'object' && data !== null
+            ? data.startTile || null
+            : null;
+
+        const mapDef = MAPS[startMapId] || MAPS.MAP1;
         this.currentMapId = startMapId;
         this.mapDef = mapDef;
         this.cols = mapDef.dims.cols;
         this.rows = mapDef.dims.rows;
         this.worldW = this.cols * TILE_W;
         this.worldH = this.rows * TILE_H + 160;
+
+        // DO008: Workbench discovery state
+        this.workbenchDiscovered = false;
+        this.indoorMode = false;
 
         this.physics.world.setBounds(0, 0, this.worldW, this.worldH);
 
@@ -507,6 +459,9 @@ class WorldScene extends Phaser.Scene {
 
         // Update UI to reflect current map
         this.updateMapUI();
+
+        // DO010: Position UI panels
+        this.repositionUI();
     }
 
     tilePosition(i, j) {
@@ -518,16 +473,6 @@ class WorldScene extends Phaser.Scene {
         };
     }
 
-    checkZone(i, j, zone) {
-        if (!zone) return false;
-        if (typeof zone === 'boolean') return zone;
-        if (zone.includes) return zone.includes([i, j]);
-        // Support {minI, maxI, minJ, maxJ} rectangle definition
-        if (zone.minI != null && i >= zone.minI && i <= zone.maxI &&
-            zone.minJ != null && j >= zone.minJ && j <= zone.maxJ) return true;
-        return false;
-    }
-
     drawMap() {
         const graphics = this.add.graphics({ add: true });
         const colors = this.mapDef.terrainColors;
@@ -535,52 +480,20 @@ class WorldScene extends Phaser.Scene {
         for (let i = 0; i < this.cols; i++) {
             for (let j = 0; j < this.rows; j++) {
                 const { x, y } = this.tilePosition(i, j);
+                const edge = i === 0 || j === 0 ||
+                    i === this.cols - 1 || j === this.rows - 1;
+
+                const road = i === 15 || j === 15;
                 let color;
 
-                // Zone detection — per-map zone definitions from mapDef
-                const zones = this.mapDef.zones || {};
-                const inWoodland    = zones.woodland    ? this.checkZone(i, j, zones.woodland)    : false;
-                const inAbandoned   = zones.abandoned   ? this.checkZone(i, j, zones.abandoned)   : false;
-                const inIndustrial  = zones.industrial  ? this.checkZone(i, j, zones.industrial)  : false;
-                const inOvergrown   = zones.overgrown   ? this.checkZone(i, j, zones.overgrown)   : false;
-                const inHomeDist    = zones.homeDistrict ? this.checkZone(i, j, zones.homeDistrict) : false;
-
-                // Shoreline: SE edge tiles that are on the island boundary
-                const isSEShore = this.isInsideIsland(x, y) &&
-                    (i >= 24 || j <= 5) && !inWoodland && !inIndustrial;
-
-                // Road network connecting all zones
-                const road = i === 15 || j === 15;
-
-                if (road) {
+                if (edge) {
+                    color = colors.edge;
+                } else if (road) {
                     color = colors.road;
-                } else if (isSEShore) {
-                    color = ((i * 7 + j * 13) % 3 === 0)
-                        ? colors.shore[1]
-                        : colors.shore[0];
-                } else if (inWoodland) {
-                    color = ((i * 7 + j * 13) % 5 === 0)
-                        ? colors.woodland[1]
-                        : colors.woodland[0];
-                } else if (inAbandoned) {
-                    color = ((i * 7 + j * 13) % 5 === 0)
-                        ? colors.abandoned[1]
-                        : colors.abandoned[0];
-                } else if (inIndustrial) {
-                    color = ((i * 7 + j * 13) % 5 === 0)
-                        ? colors.industrial[1]
-                        : colors.industrial[0];
-                } else if (inOvergrown) {
-                    color = ((i * 7 + j * 13) % 5 === 0)
-                        ? colors.overgrown[1]
-                        : colors.overgrown[0];
-                } else if (inHomeDist) {
+                } else {
                     color = ((i * 7 + j * 13) % 5 === 0)
                         ? colors.grass[1]
                         : colors.grass[0];
-                } else {
-                    // Background / water tiles outside main zones — skip drawing
-                    continue;
                 }
 
                 graphics.fillStyle(color, 1);
@@ -626,11 +539,6 @@ class WorldScene extends Phaser.Scene {
                 graphics.strokePath();
             }
         }
-
-        // Draw a fog overlay gradient at map edges
-        const fogOverlay = this.add.graphics({ add: true });
-        fogOverlay.setDepth(50);
-        fogOverlay.setVisible(false); // Fog tiles handle it; keep overlay for future use
     }
 
     createTextures() {
@@ -647,7 +555,7 @@ class WorldScene extends Phaser.Scene {
         }
 
         // House: 96x80
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#695344';
             ctx.fillRect(12, 35, 72, 42);
             ctx.fillStyle = '#994e40';
@@ -662,7 +570,7 @@ class WorldScene extends Phaser.Scene {
         }, 'house', 96, 80);
 
         // Tree: 42x54
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#59412c';
             ctx.fillRect(16, 24, 10, 28);
             ctx.fillStyle = '#31583c';
@@ -672,7 +580,7 @@ class WorldScene extends Phaser.Scene {
         }, 'tree', 42, 54);
 
         // Workbench: 56x46
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#443324';
             ctx.fillRect(5, 23, 46, 9);
             ctx.fillStyle = '#8a6039';
@@ -684,36 +592,8 @@ class WorldScene extends Phaser.Scene {
             ctx.fillRect(13, 13, 30, 3);
         }, 'workbench', 56, 46);
 
-        // Indoor floor: 64x32
-        drawToBitmap.call(this, function(ctx) {
-            ctx.fillStyle = '#8a7050';
-            ctx.fillRect(0, 0, 64, 32);
-            ctx.fillStyle = '#7a6040';
-            ctx.fillRect(0, 15, 64, 2);
-            ctx.fillRect(32, 0, 2, 15);
-            ctx.fillRect(16, 17, 2, 15);
-            ctx.fillRect(48, 17, 2, 15);
-            ctx.fillStyle = '#9a8060';
-            ctx.fillRect(8, 8, 20, 2);
-            ctx.fillRect(36, 8, 20, 2);
-        }, 'indoor_floor', 64, 32);
-
-        // Indoor wall: 64x32
-        drawToBitmap.call(this, function(ctx) {
-            ctx.fillStyle = '#5a4a3a';
-            ctx.fillRect(0, 0, 64, 32);
-            ctx.fillStyle = '#4a3a2a';
-            ctx.fillRect(0, 0, 64, 4);
-            ctx.fillRect(0, 28, 64, 4);
-            ctx.fillRect(0, 0, 4, 32);
-            ctx.fillRect(60, 0, 4, 32);
-            ctx.fillStyle = '#6a5a4a';
-            ctx.fillRect(8, 8, 20, 2);
-            ctx.fillRect(36, 8, 20, 2);
-        }, 'indoor_wall', 64, 32);
-
         // Player: 32x38
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = 'rgba(23,32,29,0.25)';
             ctx.beginPath(); ctx.ellipse(16, 30, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#e2c49a';
@@ -746,7 +626,7 @@ class WorldScene extends Phaser.Scene {
         }
 
         // Stage 0 - bare hull frame
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#3a5a3a';
             ctx.beginPath();
             ctx.ellipse(40, 42, 34, 7, 0, 0, Math.PI * 2);
@@ -774,7 +654,7 @@ class WorldScene extends Phaser.Scene {
         }, 'boat_stage0', 80, 50);
 
         // Stage 1 - reinforced hull
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#3a5a3a';
             ctx.beginPath();
             ctx.ellipse(40, 42, 34, 7, 0, 0, Math.PI * 2);
@@ -807,7 +687,7 @@ class WorldScene extends Phaser.Scene {
         }, 'boat_stage1', 80, 50);
 
         // Stage 2 - rigging
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#3a5a3a';
             ctx.beginPath();
             ctx.ellipse(40, 42, 34, 7, 0, 0, Math.PI * 2);
@@ -845,7 +725,7 @@ class WorldScene extends Phaser.Scene {
         }, 'boat_stage2', 80, 50);
 
         // Stage 3 - full sail
-        drawToBitmap.call(this, function(ctx) {
+        drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = '#3a5a3a';
             ctx.beginPath();
             ctx.ellipse(40, 42, 34, 7, 0, 0, Math.PI * 2);
@@ -921,92 +801,6 @@ class WorldScene extends Phaser.Scene {
         }
     }
 
-    createIndoorObjects() {
-        this.indoorObjects = this.physics.add.staticGroup();
-
-        // Draw indoor floor
-        const floorGraphics = this.add.graphics({ add: true });
-        for (let i = 0; i < INDOOR_MAP.cols; i++) {
-            for (let j = 0; j < INDOOR_MAP.rows; j++) {
-                const p = indoorTilePosition(i, j);
-                floorGraphics.fillStyle(0x8a7050, 1);
-                floorGraphics.fillRect(p.x - 32, p.y - 16, 64, 32);
-            }
-        }
-        floorGraphics.setDepth(-1000);
-
-        // Create wall obstacles
-        for (const [i, j] of INDOOR_MAP.walls) {
-            const p = indoorTilePosition(i, j);
-            const wall = this.indoorObjects.create(p.x, p.y, 'indoor_wall');
-            wall.setDepth(p.y);
-            wall.refreshBody();
-            wall.setData('kind', 'wall');
-        }
-
-        // Create workbench inside
-        const wp = indoorTilePosition(INDOOR_MAP.workbench.i, INDOOR_MAP.workbench.j);
-        this.indoorWorkbench = this.indoorObjects.create(wp.x, wp.y - 12, 'workbench');
-        this.indoorWorkbench.setDepth(wp.y);
-        this.indoorWorkbench.refreshBody();
-        this.indoorWorkbench.setData('name', 'Workbench');
-        this.indoorWorkbench.setData('kind', 'workbench');
-
-        // Create door (exit) at bottom center
-        const dp = indoorTilePosition(INDOOR_MAP.door.i, INDOOR_MAP.door.j);
-        this.indoorDoor = this.indoorObjects.create(dp.x, dp.y, 'door');
-        this.indoorDoor.setDepth(dp.y);
-        this.indoorDoor.refreshBody();
-        this.indoorDoor.setData('name', 'Exit');
-        this.indoorDoor.setData('kind', 'door');
-
-        // Sync discovered state
-        if (this.workbenchDiscovered) {
-            this.indoorWorkbench.setData('discovered', true);
-        }
-    }
-
-    destroyIndoorObjects() {
-        if (this.indoorObjects) {
-            this.indoorObjects.destroy();
-            this.indoorObjects = null;
-        }
-        this.indoorWorkbench = null;
-        this.indoorDoor = null;
-
-        // Clear floor graphics
-        const existingGraphics = this.children.getAll().filter(c => c.type === 'graphics');
-        existingGraphics.forEach(g => g.destroy());
-    }
-
-    setIndoorMode(enabled) {
-        this.indoorMode = enabled;
-        if (enabled) {
-            this.createIndoorObjects();
-            // Move player to door position
-            const dp = indoorTilePosition(INDOOR_MAP.door.i, INDOOR_MAP.door.j);
-            this.player.setPosition(dp.x, dp.y);
-            this.player.setDepth(dp.y);
-            this.physics.world.setBounds(
-                INDOOR_MAP.originX - 160,
-                INDOOR_MAP.originY - 20,
-                INDOOR_MAP.cols * TILE_W + 320,
-                INDOOR_MAP.rows * TILE_H + 40
-            );
-            this.cameras.main.setZoom(2.0);
-            this.cameras.main.follow(this.player, true, 0.08, 0.08);
-        } else {
-            this.destroyIndoorObjects();
-            // Move player back to outdoor position near house
-            const hp = this.tilePosition(13, 13);
-            this.player.setPosition(hp.x, hp.y + 40);
-            this.player.setDepth(this.player.y);
-            this.physics.world.setBounds(0, 0, this.worldW, this.worldH);
-            this.cameras.main.setZoom(1.5);
-            this.cameras.main.follow(this.player, true, 0.08, 0.08);
-        }
-    }
-
     createPlayer(startTile) {
         const p = this.tilePosition(startTile.i, startTile.j);
         this.player = this.physics.add.sprite(p.x, p.y, 'player');
@@ -1058,12 +852,9 @@ class WorldScene extends Phaser.Scene {
         this.equipment = GameState.equipment;
         this.nearbyObject = null;
         this.interactionWasDown = false;
-        this.indoorMode = false;
-        this.indoorObjects = null;
         this.boatStage = GameState.boatStage;
         this.boatStagesCompleted = GameState.boatStagesCompleted;
         this.boatBuilt = GameState.boatBuilt;
-        this.workbenchDiscovered = GameState.workbenchDiscovered;
 
         this.interactionPrompt = this.add.text(
             480, 520, '',
@@ -1161,8 +952,16 @@ class WorldScene extends Phaser.Scene {
 
         const recipeScrollArea = this.add.container(0, -43);
 
-        this.recipeCards = [];
         let cardY = 0;
+
+        const recipeMaskShape = this.add.graphics();
+        recipeMaskShape.fillStyle(0xffffff, 1);
+        recipeMaskShape.fillRect(-185, -105, 370, 205);
+
+        const recipeMask = recipeMaskShape.createGeometryMask();
+        recipeScrollArea.setMask(recipeMask);
+
+        this.craftingPanel.add([panelBorder, panelBackground, panelTitle, recipeScrollArea]);
 
         for (const recipe of RECIPES) {
             const card = this.add.container(0, cardY);
@@ -1243,10 +1042,6 @@ class WorldScene extends Phaser.Scene {
         this.boatProgressText = this.add.text(20, 60, '', {
             fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#94a3b8'
         }).setDepth(1).setVisible(false);
-        // Boat Progress UI (DO015)
-        this.boatProgressText = this.add.text(20, 60, '', {
-            fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#94a3b8'
-        }).setDepth(1).setVisible(false);
         this.craftingOpen = false;
 
         this.refreshInventoryUI();
@@ -1297,6 +1092,12 @@ class WorldScene extends Phaser.Scene {
     }
 
     craftRecipe(recipe) {
+        // DO009: Check workbench requirement
+        if (recipe.workbenchRequired && !this.workbenchDiscovered) {
+            this.showMessage('Must discover a workbench first!');
+            return;
+        }
+
         const canCraft = Object.entries(recipe.ingredients).every(
             ([key, amount]) => this.hasItem(key, amount)
         );
@@ -1349,23 +1150,63 @@ class WorldScene extends Phaser.Scene {
             const count = this.inventory[key] || 0;
             const filled = Math.min(count, 10);
             const empty = 10 - filled;
-            const bar = '[' + '■'.repeat(filled) + '·'.repeat(empty) + ']';
+
+            // DO010: Unicode block bars
+            const bar = '█'.repeat(filled) + '░'.repeat(empty);
+
+            // DO010: Color coding based on category
+            let color = '#d8e8d2';
+            if (def.category === 'raw-material') {
+                color = '#7ab87a';
+            } else if (def.category === 'crafted-component') {
+                color = '#d4c070';
+            } else if (def.category === 'gatherable') {
+                color = '#70b8d4';
+            } else if (def.category === 'consumable') {
+                color = '#e27070';
+            }
+
             lines.push(`${def.name}: ${count.toString().padStart(2)}/${def.limit}  ${bar}`);
         }
 
         this.inventoryText.setText(lines.join('\n'));
     }
 
-    showMessage(message) {
+    showMessage(message, type = 'info') {
+        // DO010: Color-coded messages
+        let color = '#d8e8d2';
+        if (type === 'success') color = '#7ab87a';
+        else if (type === 'warning') color = '#d4c070';
+        else if (type === 'error') color = '#e27070';
+
         this.messageText.setText(message);
+        this.messageText.setColor(color);
         this.messageText.setVisible(true);
+
+        // DO010: Fade-in animation
+        this.messageText.setAlpha(0);
+        this.tweens.add({
+            targets: this.messageText,
+            alpha: 1,
+            duration: 200,
+            ease: 'Power2',
+        });
 
         if (this.messageHideEvent) {
             this.messageHideEvent.remove(false);
         }
 
         this.messageHideEvent = this.time.delayedCall(1800, () => {
-            this.messageText.setVisible(false);
+            // DO010: Fade-out animation
+            this.tweens.add({
+                targets: this.messageText,
+                alpha: 0,
+                duration: 200,
+                ease: 'Power2',
+                onComplete: () => {
+                    this.messageText.setVisible(false);
+                }
+            });
         });
     }
 
@@ -1397,7 +1238,6 @@ class WorldScene extends Phaser.Scene {
         const px = this.player.x - 960;
         const py = this.player.y - 40;
         // Inverse of tilePosition: x = 960 + (i-j)*32, y = 40 + (i+j)*16
-        // i = (x-960)/32 + (y-40)/16  all / TILE_W and TILE_H/2
         const j = (py / (TILE_H / 2) - px / (TILE_W / 2)) / 2;
         const i = (py / (TILE_H / 2) + px / (TILE_W / 2)) / 2;
         return { i: Math.round(i), j: Math.round(j) };
@@ -1416,28 +1256,7 @@ class WorldScene extends Phaser.Scene {
             object.setData('searched', true);
 
             const table = LOOT_TABLES[name] || LOOT_TABLES['Abandoned House'];
-            // Weight by map loot profile for cross-map consistency
-            const profile = this.mapDef.lootProfile || {};
-            let loot;
-            if (Object.keys(profile).length > 0) {
-                // Filter and weight loot table entries by profile
-                const weighted = table.map(entry => {
-                    let score = 1;
-                    for (const [item, amount] of Object.entries(entry)) {
-                        if (profile[item]) score *= profile[item];
-                    }
-                    return { entry, score };
-                });
-                const total = weighted.reduce((s, w) => s + w.score, 0);
-                let r = Math.random() * total;
-                for (const w of weighted) {
-                    r -= w.score;
-                    if (r <= 0) { loot = w.entry; break; }
-                }
-                if (!loot) loot = table[0];
-            } else {
-                loot = Phaser.Math.RND.pick(table);
-            }
+            const loot = Phaser.Math.RND.pick(table);
 
             for (const [item, amount] of Object.entries(loot)) {
                 this.addItem(item, amount);
@@ -1447,17 +1266,10 @@ class WorldScene extends Phaser.Scene {
             return;
         }
 
-        if (kind === 'door') {
-            this.setIndoorMode(false);
-            this.showMessage('Exited the house.');
-            return;
-        }
-
         if (kind === 'workbench') {
-            if (!this.workbenchDiscovered) {
-                this.showMessage('You need to discover the workbench first. Look around inside.');
-                return;
-            }
+            // DO008: Mark workbench as discovered
+            this.workbenchDiscovered = true;
+
             this.craftingOpen = true;
             this.craftingPanel.setVisible(true);
             this.showMessage('Workbench opened.');
@@ -1485,31 +1297,9 @@ class WorldScene extends Phaser.Scene {
             }
 
             object.setData('harvested', true);
-            const tile = this.playerTile();
-            const zone = this.getZone(tile.i, tile.j);
-
-            // Map-aware loot profile yields
-            const profile = this.mapDef.lootProfile || {};
-            let woodAmount = Math.max(1, Math.round(3 * (profile.wood || 1)));
-            if (zone === 'woodland') woodAmount = Math.max(woodAmount, Math.round(4 * (profile.wood || 1)));
-            else if (zone === 'overgrown') woodAmount = Math.max(woodAmount, Math.round(4 * (profile.wood || 1)));
-            else if (zone === 'shore') woodAmount = Math.max(woodAmount, Math.round(2 * (profile.wood || 1)));
-
-            const branchesAmount = Math.max(0, Math.round(2 * (profile.branches || 0)));
-            const fibersAmount = Math.max(0, Math.round(1 * (profile.fibers || 0)));
-
-            let result = this.addItem('wood', woodAmount);
-            if (this.equipment.axe) {
-                const ax = this.addItem('wood', 1);
-                result.message += ' ';
-            }
-            if (branchesAmount > 0) {
-                const br = this.addItem('branches', branchesAmount);
-                result.message += br.message.replace('Added', 'And found');
-            }
-            if (fibersAmount > 0) {
-                this.addItem('fibers', fibersAmount);
-            }
+            let woodAmount = 3;
+            if (this.equipment.axe) woodAmount = 4;
+            this.addItem('wood', woodAmount);
         }
     }
 
@@ -1532,10 +1322,9 @@ class WorldScene extends Phaser.Scene {
     }
 
     buildBoatStage() {
-        // DO015: Show stage availability feedback
+        // DO015: Stage availability feedback
         if (this.boatBuilt || this.boatStage >= BOAT_STAGES.length) {
             if (!this.boatBuilt) {
-                const lastStage = BOAT_STAGES[BOAT_STAGES.length - 1];
                 this.showMessage('The boat is already complete and ready to sail!');
             }
             return;
@@ -1550,3 +1339,358 @@ class WorldScene extends Phaser.Scene {
             this.showMessage(`Not enough resources for ${stage.name}.`);
             return;
         }
+
+        for (const [key, amount] of Object.entries(stage.ingredients)) {
+            this.removeItem(key, amount);
+        }
+
+        this.boatStagesCompleted[this.boatStage] = true;
+        this.boatStage++;
+
+        if (this.boatSite) {
+            const isLastStage = this.boatStage >= BOAT_STAGES.length;
+            const texIndex = isLastStage ? 3 : this.boatStage;
+            this.boatSite.setTexture(`boat_stage${texIndex}`);
+        }
+
+        if (this.boatStage >= BOAT_STAGES.length) {
+            this.boatBuilt = true;
+            this.showMessage('Boat fully repaired! You can now sail across the sea.');
+        } else {
+            const nextStage = BOAT_STAGES[this.boatStage];
+            this.showMessage(`${stage.name} complete! Next: ${nextStage.name}.`);
+        }
+
+        this.refreshBoatUI();
+    }
+
+    refreshBoatUI() {
+        const lines = ['BOAT CONSTRUCTION', ''];
+        let missingAny = false;
+
+        for (let i = 0; i < BOAT_STAGES.length; i++) {
+            const stage = BOAT_STAGES[i];
+            const done = this.boatStagesCompleted[i];
+            const current = i === this.boatStage && !this.boatBuilt;
+
+            const resourceRows = Object.entries(stage.ingredients).map(([k, a]) => {
+                const available = this.inventory[k] || 0;
+                const cap = ITEM_DEFS[k]?.limit ?? '?';
+                const hasEnough = available >= a;
+                if (!done && !hasEnough) missingAny = true;
+                return `    ${ITEM_DEFS[k].name}: ${available}/${cap}  (need ${a})`;
+            });
+
+            const icon = done ? '✔' : (current ? '►' : '○');
+            lines.push(`${icon}  ${stage.name}`);
+            lines.push(...resourceRows);
+
+            if (current && !done) {
+                const missing = Object.entries(stage.ingredients)
+                    .filter(([k, a]) => (this.inventory[k] || 0) < a)
+                    .map(([k, a]) => `${a - (this.inventory[k] || 0)} ${ITEM_DEFS[k].name}`);
+                if (missing.length > 0) {
+                    lines.push(`    ⚠ Missing: ${missing.join(', ')}`);
+                }
+            }
+        }
+
+        if (this.boatBuilt) {
+            lines.push('');
+            lines.push('✔ ALL STAGES COMPLETE — the boat is seaworthy!');
+        } else {
+            const allDone = BOAT_STAGES.every((_, i) => this.boatStagesCompleted[i]);
+            if (!allDone) {
+                lines.push(missingAny ? '  (gather more resources to continue)' : '');
+            }
+        }
+
+        this.boatText.setText(lines.join('\n'));
+    }
+
+    isInsideIsland(x, y) {
+        const centerX = 960;
+        const centerY = 40 + ((this.rows - 1) * TILE_H) / 2;
+        const halfWidth = ((this.cols - 1) * TILE_W) / 2;
+        const halfHeight = ((this.rows - 1) * TILE_H) / 2;
+        const normalizedX = Math.abs(x - centerX) / halfWidth;
+        const normalizedY = Math.abs(y - centerY) / halfHeight;
+        return normalizedX + normalizedY <= 0.94;
+    }
+
+    pixelToTile(x, y) {
+        const px = x - 960;
+        const py = y - 40;
+        const j = (py / (TILE_H / 2) - px / (TILE_W / 2)) / 2;
+        const i = (py / (TILE_H / 2) + px / (TILE_W / 2)) / 2;
+        return { i: Math.round(i), j: Math.round(j) };
+    }
+
+    getZone(i, j) {
+        if (i >= 8 && i <= 18 && j >= 8 && j <= 18) return 'home';
+        if (i >= 3 && i <= 12 && j >= 3 && j <= 10) return 'woodland';
+        if (i >= 3 && i <= 12 && j >= 15 && j <= 22) return 'abandoned';
+        if (i >= 18 && i <= 25 && j >= 3 && j <= 10) return 'industrial';
+        if (i >= 10 && i <= 20 && j >= 10 && j <= 20) return 'overgrown';
+        if (i >= 20 && i <= 28 && j >= 5 && j <= 12) return 'shore';
+        return 'water';
+    }
+
+    // Check if player is stepping on a map exit path
+    checkMapTransition() {
+        const tile = this.playerTile();
+        const exits = this.mapDef.exits || [];
+
+        for (const exit of exits) {
+            // Check if player is near the exit tile
+            const dx = Math.abs(tile.i - exit.fromTile.i);
+            const dy = Math.abs(tile.j - exit.fromTile.j);
+            if (dx <= 1 && dy <= 1) {
+                // Trigger transition
+                this.transitionToMap(exit.toMap, exit.entryTile);
+                return;
+            }
+        }
+    }
+
+    transitionToMap(mapId, entryTile) {
+        // Sync state to GameState before transition
+        GameState.inventory = this.inventory;
+        GameState.equipment = this.equipment;
+        GameState.boatStage = this.boatStage;
+        GameState.boatStagesCompleted = this.boatStagesCompleted;
+        GameState.boatBuilt = this.boatBuilt;
+
+        // Close crafting panel if open
+        if (this.craftingOpen) {
+            this.craftingOpen = false;
+            this.craftingPanel.setVisible(false);
+        }
+
+        // Start new scene with same key but fresh create()
+        this.scene.start('WorldScene', { startMapId: mapId, startTile: entryTile });
+    }
+
+    updateMapUI() {
+        const mapName = this.mapDef.name;
+        const mapId = this.mapDef.id;
+        // Update the header text on screen
+        if (this.mapLabel) {
+            this.mapLabel.setText(`${mapName}  /  ${mapId}`);
+        } else {
+            this.mapLabel = this.add.text(24, 66, `${mapName}  /  ${mapId}`, {
+                fontFamily: 'sans-serif',
+                fontSize: '12px',
+                color: '#d8e8d2',
+                backgroundColor: '#14251dcc',
+                padding: { x: 10, y: 7 },
+            })
+                .setScrollFactor(0)
+                .setDepth(1000);
+        }
+    }
+
+    // DO010: Reposition UI panels based on viewport size
+    repositionUI() {
+        const w = this.scale.width;
+        const h = this.scale.height;
+
+        if (this.inventoryPanel) {
+            this.inventoryPanel.setPosition(w - 220, 80);
+        }
+        if (this.inventoryText) {
+            this.inventoryText.setPosition(w - 210, 90);
+        }
+
+        if (this.boatPanel) {
+            this.boatPanel.setPosition(24, h - 180);
+        }
+        if (this.boatText) {
+            this.boatText.setPosition(24, h - 170);
+        }
+
+        if (this.messageText) {
+            this.messageText.setPosition(w / 2, h - 40);
+        }
+    }
+
+    update() {
+        const body = this.player.body;
+        if (!body) return;
+
+        this.nearbyObject = this.findNearbyObject();
+
+        if (this.keys.ESC.isDown && !this.escapeWasDown) {
+            if (this.craftingOpen) {
+                this.craftingOpen = false;
+                this.craftingPanel.setVisible(false);
+            }
+        }
+        this.escapeWasDown = this.keys.ESC.isDown;
+
+        // Handle crafting key when panel is open
+        if (this.craftingOpen && this.keys.E.isDown && !this.interactionWasDown) {
+            const nearby = this.findNearbyObject();
+            if (nearby && nearby.getData('kind') === 'workbench') {
+                const firstAffordable = RECIPES.find(r =>
+                    Object.entries(r.ingredients).every(
+                        ([key, amount]) => this.hasItem(key, amount)
+                    )
+                );
+                if (firstAffordable) {
+                    this.craftRecipe(firstAffordable);
+                } else {
+                    this.showMessage('No affordable recipes available.');
+                }
+            }
+        }
+
+        if (this.craftingOpen) {
+            this.interactionPrompt.setVisible(false);
+        } else if (this.nearbyObject) {
+            const kind = this.nearbyObject.getData('kind');
+            const name = this.nearbyObject.getData('name') || 'Object';
+
+            if (kind === 'workbench') {
+                this.interactionPrompt.setText(`E — Craft items: ${name}`);
+            } else if (kind === 'boatSite') {
+                if (this.boatBuilt) {
+                    this.interactionPrompt.setText(`${name} — Boat complete!`);
+                } else {
+                    const stage = BOAT_STAGES[this.boatStage];
+                    this.interactionPrompt.setText(`E — Build ${stage.name}: ${name}`);
+                }
+            } else {
+                const alreadyUsed = kind === 'house'
+                    ? this.nearbyObject.getData('searched')
+                    : this.nearbyObject.getData('harvested');
+
+                let action = kind === 'house' ? 'Search' : 'Gather wood';
+
+                if (alreadyUsed) {
+                    action = kind === 'house'
+                        ? 'Already searched'
+                        : 'Already harvested';
+                }
+
+                this.interactionPrompt.setText(
+                    alreadyUsed
+                        ? `${name} — ${action}`
+                        : `E — ${action}: ${name}`
+                );
+            }
+
+            this.interactionPrompt.setVisible(true);
+        } else {
+            this.interactionPrompt.setVisible(false);
+        }
+
+        const interactionDown = this.keys.E.isDown;
+
+        if (
+            !this.craftingOpen &&
+            interactionDown &&
+            !this.interactionWasDown &&
+            this.nearbyObject &&
+            this.nearbyObject.getData('kind') !== 'boatSite'
+        ) {
+            this.interactWith(this.nearbyObject);
+        }
+
+        // Build boat stage when E is pressed at the dock.
+        if (
+            !this.craftingOpen &&
+            interactionDown &&
+            !this.interactionWasDown &&
+            this.nearbyObject?.getData('kind') === 'boatSite' &&
+            !this.boatBuilt
+        ) {
+            this.buildBoatStage();
+        }
+
+        this.interactionWasDown = interactionDown;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (this.cursors.left.isDown || this.keys.A.isDown) dx -= 1;
+        if (this.cursors.right.isDown || this.keys.D.isDown) dx += 1;
+        if (this.cursors.up.isDown || this.keys.W.isDown) dy -= 1;
+        if (this.cursors.down.isDown || this.keys.S.isDown) dy += 1;
+
+        if (dx !== 0 && dy !== 0) {
+            const length = Math.sqrt(dx * dx + dy * dy);
+            dx /= length;
+            dy /= length;
+        }
+
+        // Avoid snapping the player backward at the island edge.
+        const inside = this.isInsideIsland(
+            this.player.x,
+            this.player.y
+        );
+
+        if (!inside) {
+            const centerX = 960;
+            const centerY = 40 + ((this.rows - 1) * TILE_H) / 2;
+
+            const towardCenterX = centerX - this.player.x;
+            const towardCenterY = centerY - this.player.y;
+
+            const dot =
+                dx * towardCenterX +
+                dy * towardCenterY;
+
+            if (dot < 0) {
+                dx = 0;
+                dy = 0;
+            }
+        }
+
+        body.setAcceleration(dx * 900, dy * 900);
+
+        if (dx === 0) {
+            body.setAccelerationX(0);
+        }
+
+        if (dy === 0) {
+            body.setAccelerationY(0);
+        }
+
+        // Check for map transitions at path exits
+        this.checkMapTransition();
+    }
+}
+
+// ============================================================
+// GAME INITIALIZATION — accept start data via scene config
+// ============================================================
+const gameContainer = document.getElementById('game-container');
+
+if (gameContainer) {
+    const game = new Phaser.Game({
+        type: Phaser.CANVAS,
+        parent: 'game-container',
+        width: 960,
+        height: 600,
+        backgroundColor: '#18343b',
+        pixelArt: false,
+        antialias: true,
+        scale: {
+            mode: Phaser.Scale.RESIZE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+            },
+        },
+        scene: [WorldScene],
+    });
+
+    game.events.on('ready', () => {
+    });
+    game.events.on('shutdown', () => {
+    });
+} else {
+}
