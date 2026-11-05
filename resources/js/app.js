@@ -43,6 +43,7 @@ const MAPS = {
             { tile: { i: 13, j: 13 }, label: 'Start' },
             { tile: { i: 14, j: 23 }, label: 'Boat Dock' },
         ],
+        workbenches: [],
     },
     MAP2: {
         id: 'MAP2',
@@ -150,6 +151,7 @@ const MAP_OBSTACLES = {
             [18, 25], [10, 25], [26, 16], [6, 25],
         ],
         boatSite: null,
+        workbenches: [],
     },
     MAP3: {
         buildings: [
@@ -164,6 +166,7 @@ const MAP_OBSTACLES = {
             [17, 25], [11, 25], [26, 14], [6, 26],
         ],
         boatSite: null,
+        workbenches: [],
     },
     MAP4: {
         buildings: [
@@ -178,6 +181,7 @@ const MAP_OBSTACLES = {
             [16, 26], [9, 26], [27, 13], [5, 27],
         ],
         boatSite: null,
+        workbenches: [],
     },
     MAP5: {
         buildings: [
@@ -191,6 +195,7 @@ const MAP_OBSTACLES = {
             [18, 25], [12, 25], [26, 15], [6, 26],
         ],
         boatSite: { i: 26, j: 27 },
+        workbenches: [],
     },
 };
 
@@ -952,7 +957,7 @@ class WorldScene extends Phaser.Scene {
             obj.setData(b.searchKey, false);
         }
 
-        for (const wb of defs.workbenches) {
+        for (const wb of (defs.workbenches || [])) {
             const p = this.tilePosition(wb.i, wb.j);
             const workbench = this.obstacles.create(p.x, p.y - 12, 'workbench');
             workbench.setDepth(workbench.y);
