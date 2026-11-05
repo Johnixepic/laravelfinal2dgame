@@ -12,6 +12,7 @@ const GameState = {
     boatStage: 0,
     boatStagesCompleted: [false, false, false, false],
     boatBuilt: false,
+    workbenchDiscovered: false,
 };
 
 // ============================================================
@@ -127,22 +128,22 @@ const MAP_OBSTACLES = {
             { i: 10, j: 21, name: 'Garden Shed', kind: 'house', searchKey: 'searched' },
             { i: 21, j: 20, name: 'Old House', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [{ i: 16, j: 18 }],
         trees: [
             [5, 8], [7, 7], [6, 11], [8, 19],
             [5, 21], [23, 8], [24, 12], [23, 23],
             [18, 24], [12, 24], [25, 18], [7, 24],
         ],
-        boatSite: { i: 14, j: 23 },
     },
     MAP2: {
         buildings: [
             { i: 8, j: 10, name: 'Ruined Shack', kind: 'house', searchKey: 'searched' },
-            { i: 18, j: 8, name: 'Old Store', kind: 'house', searchKey: 'searched' },
+            { i: 18, j: 8, name: 'Old Store', kind: 'house', searchKey: 'searched', indoor: true },
             { i: 12, j: 20, name: 'Abandoned Barn', kind: 'house', searchKey: 'searched' },
             { i: 22, j: 18, name: 'Derelict House', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [{ i: 15, j: 15 }],
+        indoorHouses: [
+            { buildingName: 'Old Store', workbenchTile: { i: 3, j: 2 } },
+        ],
         trees: [
             [4, 6], [6, 5], [5, 12], [7, 18],
             [4, 22], [24, 6], [25, 10], [24, 24],
@@ -157,7 +158,6 @@ const MAP_OBSTACLES = {
             { i: 9, j: 21, name: 'Machine Shop', kind: 'house', searchKey: 'searched' },
             { i: 21, j: 19, name: 'Control Tower', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [{ i: 15, j: 15 }],
         trees: [
             [4, 7], [6, 6], [5, 13], [8, 17],
             [4, 23], [24, 7], [25, 11], [23, 22],
@@ -172,7 +172,6 @@ const MAP_OBSTACLES = {
             { i: 11, j: 22, name: 'Ranger Station', kind: 'house', searchKey: 'searched' },
             { i: 20, j: 20, name: 'Old Watchtower', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [{ i: 15, j: 15 }],
         trees: [
             [3, 5], [5, 4], [4, 10], [6, 16],
             [3, 20], [25, 5], [26, 9], [25, 21],
@@ -186,13 +185,12 @@ const MAP_OBSTACLES = {
             { i: 20, j: 8, name: 'Fishing Shack', kind: 'house', searchKey: 'searched' },
             { i: 10, j: 20, name: 'Beach Tent', kind: 'house', searchKey: 'searched' },
         ],
-        workbenches: [{ i: 15, j: 15 }],
         trees: [
             [4, 6], [6, 5], [5, 12], [8, 18],
             [4, 22], [23, 7], [24, 11], [23, 23],
             [18, 25], [12, 25], [26, 15], [6, 26],
         ],
-        boatSite: { i: 14, j: 23 },
+        boatSite: { i: 26, j: 27 },
     },
 };
 
@@ -438,11 +436,20 @@ class WorldScene extends Phaser.Scene {
         this.worldH = this.rows * TILE_H + 160;
 
         // DO008: Workbench discovery state
-        this.workbenchDiscovered = false;
+        // DO022: Read persistent workbench discovery state
+        this.workbenchDiscovered = GameState.workbenchDiscovered || false;
         this.indoorMode = false;
 
         // DO019: Initialize recipe card tracking
         this.recipeCards = [];
+
+        // DO022: Indoor exploration state
+        this.indoorMode = false;
+        this.indoorGrid = null;
+        this.indoorPlayer = null;
+        this.indoorObstacles = null;
+        this.indoorWorkbenchTile = null;
+        this.currentIndoorHouse = null;
 
         // DO018: Hint system state
         this.hintIndex = 0;
@@ -600,6 +607,23 @@ class WorldScene extends Phaser.Scene {
             ctx.fillRect(13, 13, 30, 3);
         }, 'workbench', 56, 46);
 
+        // DO022: Indoor textures for MAP2 house discovery
+        const floor = this.make.graphics({ x: 0, y: 0, add: false });
+        floor.fillStyle(0x8b7355, 1);
+        floor.fillRect(0, 0, 32, 32);
+        floor.lineStyle(1, 0x6b5344, 0.5);
+        floor.strokeRect(0, 0, 32, 32);
+        floor.generateTexture('indoor_floor', 32, 32);
+        floor.destroy();
+
+        const wall = this.make.graphics({ x: 0, y: 0, add: false });
+        wall.fillStyle(0x5d4037, 1);
+        wall.fillRect(0, 0, 32, 32);
+        wall.lineStyle(1, 0x3e2723, 0.8);
+        wall.strokeRect(0, 0, 32, 32);
+        wall.generateTexture('indoor_wall', 32, 32);
+        wall.destroy();
+
         // Player: 32x38
         drawToBitmap.call(this, function (ctx) {
             ctx.fillStyle = 'rgba(23,32,29,0.25)';
@@ -618,6 +642,145 @@ class WorldScene extends Phaser.Scene {
         }, 'player', 32, 38);
 
         this.createBoatTextures();
+    }
+
+    // DO022: Indoor scene methods for workbench discovery on MAP2
+    enterIndoorMode(buildingName, buildingDef) {
+        this.indoorMode = true;
+        this.currentIndoorHouse = buildingName;
+
+        // Find the indoor house definition
+        const mapObstacles = MAP_OBSTACLES[this.currentMapId] || {};
+        const indoorDef = (mapObstacles.indoorHouses || []).find(
+            h => h.buildingName === buildingName
+        );
+
+        if (!indoorDef) {
+            this.showMessage('The house is empty.');
+            this.indoorMode = false;
+            return;
+        }
+
+        // Hide outdoor obstacles and player
+        this.obstacles.setVisible(false);
+        if (this.player) this.player.setVisible(false);
+        if (this.boatSite) this.boatSite.setVisible(false);
+
+        // Create indoor grid (5x4 tiles)
+        const GRID_W = 5;
+        const GRID_H = 4;
+        const INDOOR_TILE = 32;
+        const offsetX = (960 - GRID_W * INDOOR_TILE) / 2;
+        const offsetY = (600 - GRID_H * INDOOR_TILE) / 2;
+
+        this.indoorGrid = this.add.container(offsetX, offsetY);
+        this.indoorGrid.setScrollFactor(0);
+        this.indoorGrid.setDepth(2000);
+
+        // Draw floor
+        for (let i = 0; i < GRID_W; i++) {
+            for (let j = 0; j < GRID_H; j++) {
+                const tile = this.add.rectangle(
+                    i * INDOOR_TILE + INDOOR_TILE / 2,
+                    j * INDOOR_TILE + INDOOR_TILE / 2,
+                    INDOOR_TILE, INDOOR_TILE, 0x8b7355
+                );
+                tile.setStrokeStyle(1, 0x6b5344);
+                this.indoorGrid.add(tile);
+            }
+        }
+
+        // Draw walls (border)
+        for (let i = 0; i < GRID_W; i++) {
+            const wall = this.add.rectangle(
+                i * INDOOR_TILE + INDOOR_TILE / 2,
+                -8, INDOOR_TILE, 16, 0x5d4037
+            );
+            wall.setStrokeStyle(1, 0x3e2723);
+            this.indoorGrid.add(wall);
+        }
+        for (let i = 0; i < GRID_W; i++) {
+            const wall = this.add.rectangle(
+                i * INDOOR_TILE + INDOOR_TILE / 2,
+                GRID_H * INDOOR_TILE + 8, INDOOR_TILE, 16, 0x5d4037
+            );
+            wall.setStrokeStyle(1, 0x3e2723);
+            this.indoorGrid.add(wall);
+        }
+        for (let j = 0; j < GRID_H; j++) {
+            const wall = this.add.rectangle(
+                -8, j * INDOOR_TILE + INDOOR_TILE / 2, 16, INDOOR_TILE, 0x5d4037
+            );
+            wall.setStrokeStyle(1, 0x3e2723);
+            this.indoorGrid.add(wall);
+        }
+        for (let j = 0; j < GRID_H; j++) {
+            const wall = this.add.rectangle(
+                GRID_W * INDOOR_TILE + 8, j * INDOOR_TILE + INDOOR_TILE / 2, 16, INDOOR_TILE, 0x5d4037
+            );
+            wall.setStrokeStyle(1, 0x3e2723);
+            this.indoorGrid.add(wall);
+        }
+
+        // Place workbench at designated tile
+        const wbTile = indoorDef.workbenchTile;
+        const wbX = wbTile.i * INDOOR_TILE + INDOOR_TILE / 2;
+        const wbY = wbTile.j * INDOOR_TILE + INDOOR_TILE / 2;
+        this.indoorWorkbench = this.add.rectangle(wbX, wbY, 40, 28, 0x8a6039);
+        this.indoorWorkbench.setStrokeStyle(2, 0x5d4028);
+        this.indoorWorkbench.setDepth(10);
+        this.indoorGrid.add(this.indoorWorkbench);
+
+        // Place player at door position (bottom center)
+        this.indoorPlayer = { x: 2 * INDOOR_TILE + INDOOR_TILE / 2, y: (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 };
+        const playerSprite = this.add.rectangle(
+            this.indoorPlayer.x, this.indoorPlayer.y, 20, 28, 0xe2c49a
+        );
+        playerSprite.setDepth(11);
+        this.indoorGrid.add(playerSprite);
+        this.indoorPlayerSprite = playerSprite;
+
+        // Door at bottom center
+        const doorX = 2 * INDOOR_TILE + INDOOR_TILE / 2;
+        const doorY = (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 + 20;
+        this.indoorDoor = this.add.rectangle(doorX, doorY, 24, 12, 0x3e2723);
+        this.indoorDoor.setDepth(5);
+        this.indorGrid.add(this.indoorDoor);
+
+        // Indoor prompt
+        if (this.indoorPrompt) this.indoorPrompt.destroy();
+        this.indoorPrompt = this.add.text(480, 420, 'E — Discover workbench inside', {
+            fontFamily: 'sans-serif',
+            fontSize: '16px',
+            color: '#e2f0d8',
+            backgroundColor: '#14251fdd',
+            padding: { x: 12, y: 8 },
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(3000);
+
+        this.showMessage(`Entered ${buildingName}. Find the workbench inside.`);
+    }
+
+    exitIndoor() {
+        if (!this.indoorMode) return;
+
+        // Destroy indoor scene elements
+        if (this.indorGrid) {
+            this.indorGrid.destroy();
+            this.indorGrid = null;
+        }
+        if (this.indorPrompt) {
+            this.indorPrompt.destroy();
+            this.indorPrompt = null;
+        }
+
+        // Restore outdoor elements
+        if (this.obstacles) this.obstacles.setVisible(true);
+        if (this.player) this.player.setVisible(true);
+        if (this.boatSite) this.boatSite.setVisible(true);
+
+        this.indoorMode = false;
+        this.currentIndorHouse = null;
+        this.showMessage('You exit the building.');
     }
 
     createBoatTextures() {
@@ -1269,6 +1432,16 @@ class WorldScene extends Phaser.Scene {
         const name = object.getData('name') || 'Object';
 
         if (kind === 'house') {
+            // DO022: Check for indoor house (workbench discovery on MAP2)
+            const mapObstacles = MAP_OBSTACLES[this.currentMapId] || {};
+            const buildingDef = mapObstacles.buildings?.find(b => b.name === name);
+
+            if (buildingDef?.indoor && !this.workbenchDiscovered) {
+                // Enter indoor mode to discover workbench
+                this.enterIndoorMode(name, buildingDef);
+                return;
+            }
+
             if (object.getData('searched')) {
                 this.showMessage(`${name} has already been searched.`);
                 return;
@@ -1383,9 +1556,9 @@ class WorldScene extends Phaser.Scene {
     checkWinCondition() {
         if (this.won || !this.boatBuilt) return;
 
-        // Player must be near a boat site to trigger the ending
+        // DO022: Only trigger ending at MAP5 southeastern boat site
         const nearby = this.findNearbyObject();
-        if (nearby && nearby.getData('kind') === 'boatSite') {
+        if (nearby && nearby.getData('kind') === 'boatSite' && this.currentMapId === 'MAP5') {
             this.won = true;
             this.showEnding();
         }
@@ -1508,6 +1681,7 @@ led to this moment.`, {
         GameState.boatStage = 0;
         GameState.boatStagesCompleted = [false, false, false, false];
         GameState.boatBuilt = false;
+        GameState.workbenchDiscovered = false;
 
         // Destroy ending overlay
         if (this.endingOverlay) {
@@ -1653,6 +1827,7 @@ led to this moment.`, {
         GameState.boatStage = this.boatStage;
         GameState.boatStagesCompleted = this.boatStagesCompleted;
         GameState.boatBuilt = this.boatBuilt;
+        GameState.workbenchDiscovered = this.workbenchDiscovered || false;
 
         // Close crafting panel if open
         if (this.craftingOpen) {
@@ -1833,6 +2008,87 @@ led to this moment.`, {
         }
 
         this.interactionWasDown = interactionDown;
+
+        // DO022: Handle indoor mode movement and interaction
+        if (this.indoorMode) {
+            const GRID_W = 5;
+            const GRID_H = 4;
+            const INDOOR_TILE = 32;
+            const SPEED = 120;
+
+            let idx = 0, idy = 0;
+            if (this.keys.left.isDown || this.keys.A.isDown) idx -= 1;
+            if (this.keys.right.isDown || this.keys.D.isDown) idx += 1;
+            if (this.keys.up.isDown || this.keys.W.isDown) idy -= 1;
+            if (this.keys.down.isDown || this.keys.S.isDown) idy += 1;
+
+            if (idx !== 0 && idy !== 0) {
+                const len = Math.sqrt(idx * idx + idy * idy);
+                idx /= len;
+                idy /= len;
+            }
+
+            const newX = this.indoorPlayer.x + idx * SPEED * 0.016;
+            const newY = this.indoorPlayer.y + idy * SPEED * 0.016;
+
+            // Clamp to indoor bounds
+            const clampedX = Math.max(INDOOR_TILE / 2, Math.min(newX, (GRID_W - 0.5) * INDOOR_TILE));
+            const clampedY = Math.max(INDOOR_TILE / 2, Math.min(newY, (GRID_H - 0.5) * INDOOR_TILE));
+
+            this.indoorPlayer.x = clampedX;
+            this.indoorPlayer.y = clampedY;
+
+            if (this.indoorPlayerSprite) {
+                this.indorPlayerSprite.setPosition(clampedX, clampedY);
+            }
+
+            // Check proximity to workbench
+            const wbTile = (MAP_OBSTACLES[this.currentMapId]?.indoorHouses || [{}])[0]?.workbenchTile || { i: 3, j: 2 };
+            const wbX = wbTile.i * INDOOR_TILE + INDOOR_TILE / 2;
+            const wbY = wbTile.j * INDOOR_TILE + INDOOR_TILE / 2;
+            const distToWB = Math.hypot(clampedX - wbX, clampedY - wbY);
+
+            if (this.indorPrompt) {
+                if (distToWB < INDOOR_TILE * 1.5 && !this.workbenchDiscovered) {
+                    this.indorPrompt.setText('E — Discover workbench');
+                    this.indorPrompt.setVisible(true);
+                } else if (this.workbenchDiscovered) {
+                    this.indorPrompt.setText('You found the workbench! Press ESC to exit.');
+                    this.indorPrompt.setVisible(true);
+                } else {
+                    this.indorPrompt.setVisible(false);
+                }
+            }
+
+            // Interact with workbench inside
+            if (this.keys.E.isDown && !this.interactionWasDown && distToWB < INDOOR_TILE * 1.5) {
+                if (!this.workbenchDiscovered) {
+                    this.workbenchDiscovered = true;
+                    GameState.workbenchDiscovered = true;
+                    this.showMessage('You discovered a workbench inside! Crafting is now available.');
+                }
+            }
+
+            // Exit via door (ESC or E near door)
+            if (this.keys.E.isDown && !this.interactionWasDown) {
+                const doorX = 2 * INDOOR_TILE + INDOOR_TILE / 2;
+                const doorY = (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 + 20;
+                const distToDoor = Math.hypot(clampedX - doorX, clampedY - doorY);
+                if (distToDoor < INDOOR_TILE) {
+                    this.exitIndoor();
+                }
+            }
+
+            if (this.keys.ESC.isDown && !this.escapeWasDown) {
+                this.exitIndoor();
+            }
+
+            this.interactionWasDown = this.keys.E.isDown;
+            this.escapeWasDown = this.keys.ESC.isDown;
+
+            // Skip outdoor movement when indoors
+            return;
+        }
 
         let dx = 0;
         let dy = 0;

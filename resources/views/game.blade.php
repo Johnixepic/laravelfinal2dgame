@@ -127,7 +127,7 @@
             <div class="game-footer">
                 <span>WASD / Arrow keys — Move</span>
                 <span>E — Interact  ·  ESC — Close panels</span>
-                <span>5-map journey: Home → Settlement → Ruins → Wilderness → Coast</span>
+                <span>5-map journey: Home Island → Abandoned Settlement → Industrial Ruins → Deep Wilderness → Coastal Escape (build boat here)</span>
             </div>
         </section>
     </main>
