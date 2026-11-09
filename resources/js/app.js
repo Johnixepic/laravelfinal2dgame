@@ -1200,7 +1200,7 @@ class WorldScene extends Phaser.Scene {
         this.refreshBoatUI();
         this.survival = { ...GameState.survival };
         this.nightOverlay = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x071326, 0.24)
-            .setScrollFactor(0).setDepth(500).setVisible(false);
+            .setScrollFactor(0).setDepth(2500).setVisible(false);
         this.survivalText = this.add.text(24, 98, '', {
             fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
             color: '#e2f0d8', backgroundColor: '#0f1c12dd', padding: { x: 10, y: 7 },
@@ -1996,6 +1996,7 @@ class WorldScene extends Phaser.Scene {
                 loot.scrap = Math.max(loot.scrap || 0, 2);
                 loot.rope = Math.max(loot.rope || 0, 1);
                 loot.cloth = Math.max(loot.cloth || 0, 1);
+                loot.food = Math.max(loot.food || 0, 1);
             }
 
             // Guaranteed minimum supplies prevent unlucky loot rolls from softlocking
@@ -2143,13 +2144,16 @@ class WorldScene extends Phaser.Scene {
         if (this.endingActive) return;
         this.endingActive = true;
 
-        // Dim the game world
-        this.tweens.add({
-            targets: this.cameras.main,
-            alpha: 0,
-            duration: 1500,
-            ease: 'Power2',
-        });
+        // Animate the completed boat leaving shore before the ending card appears.
+        if (this.boatSite) {
+            this.tweens.add({
+                targets: this.boatSite,
+                x: this.boatSite.x + 620,
+                y: this.boatSite.y - 150,
+                duration: 2600,
+                ease: 'Sine.easeInOut',
+            });
+        }
 
         // Create ending overlay
         const viewW = this.scale.width;
@@ -2178,7 +2182,9 @@ class WorldScene extends Phaser.Scene {
 
         const body = this.add.text(0, -20, `The horizon stretches endlessly ahead.
 All the resources you gathered, every path you walked,
-led to this moment.`, {
+led to this moment.
+
+THE END`, {
             fontFamily: 'sans-serif',
             fontSize: '15px',
             color: '#7a9a72',
@@ -2201,7 +2207,8 @@ led to this moment.`, {
             targets: bg,
             alpha: 1,
             duration: 1500,
-            delay: 500,
+            delay: 2200,
+            duration: 1800,
             ease: 'Power2',
         });
 
@@ -2211,7 +2218,7 @@ led to this moment.`, {
             targets: title,
             alpha: 1,
             duration: 800,
-            delay: 800,
+            delay: 2600,
             ease: 'Power2',
         });
 
@@ -2220,7 +2227,7 @@ led to this moment.`, {
             targets: subtitle,
             alpha: 1,
             duration: 800,
-            delay: 1200,
+            delay: 3100,
             ease: 'Power2',
         });
 
@@ -2229,7 +2236,7 @@ led to this moment.`, {
             targets: body,
             alpha: 1,
             duration: 800,
-            delay: 1600,
+            delay: 3600,
             ease: 'Power2',
         });
 
@@ -2238,7 +2245,7 @@ led to this moment.`, {
             targets: credits,
             alpha: 1,
             duration: 800,
-            delay: 2400,
+            delay: 4400,
             ease: 'Power2',
         });
 
