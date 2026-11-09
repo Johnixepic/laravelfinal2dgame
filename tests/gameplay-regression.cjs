@@ -194,5 +194,9 @@ assert.match(source, /this\\.saveGame\\(\\{ silent: true \\}\\)/);
 assert.match(source, /if \\(!silent\\) \\{/);
 assert.match(source, /if \\(!silent\\) this\\.showMessage/);
 
+assert.match(source, /Touch users need a swipe gesture/);
+assert.match(source, /this\\.recipeDragStart\\.y - pointer\\.y/);
+assert.match(source, /if \\(!this\\.recipeDragMoved\\) this\\.craftRecipe\\(recipe\\)/);
+assert.match(source, /card\\.on\\('pointerup'/);
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
