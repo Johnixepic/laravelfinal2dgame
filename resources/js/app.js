@@ -16,6 +16,7 @@ const GameState = {
     started: false,
     objectStates: {},
     survival: { elapsedMs: 0, hunger: 100, hungerTickMs: 0 },
+    tutorialPending: false,
 };
 
 // ============================================================
@@ -1371,6 +1372,10 @@ class WorldScene extends Phaser.Scene {
         this.createCompass();
         this.refreshInventoryUI();
         this.refreshRecipeUI();
+        if (GameState.tutorialPending) {
+            this.showMessage('START HERE: Search Your Home for supplies, press E at the workbench to craft a Saw, then use it to harvest trees.', 'success');
+            GameState.tutorialPending = false;
+        }
     }
 
     updateSurvival(delta = 16) {
@@ -1579,6 +1584,7 @@ class WorldScene extends Phaser.Scene {
         GameState.objectStates = {};
         GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0 };
         GameState.started = true;
+        GameState.tutorialPending = true;
         try { localStorage.removeItem('tlc-save-v1'); } catch (error) { /* Starting a new run must still work if storage is blocked. */ }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
