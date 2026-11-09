@@ -1131,20 +1131,27 @@ class WorldScene extends Phaser.Scene {
             .setDepth(1000)
             .setVisible(false);
 
+        // High-priority toast layer: keep gameplay feedback away from the bottom
+        // prompts and above inventory/workbench panels.
         this.messageText = this.add.text(
-            this.scale.width / 2, this.scale.height - 54, '',
+            this.scale.width / 2, 118, '',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '14px',
+                fontSize: '16px',
+                fontStyle: 'bold',
                 color: '#e2f0d8',
-                backgroundColor: '#0f1c12ff',
-                padding: { x: 12, y: 8 },
+                backgroundColor: '#101b1df2',
+                padding: { x: 18, y: 12 },
                 align: 'center',
+                wordWrap: { width: Math.max(280, Math.min(760, this.scale.width - 48)), useAdvancedWrap: true },
+                stroke: '#071012',
+                strokeThickness: 3,
+                shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 6, fill: true },
             }
         )
-            .setOrigin(0.5)
+            .setOrigin(0.5, 0)
             .setScrollFactor(0)
-            .setDepth(2000);
+            .setDepth(10000);
 
         this.messageText.setVisible(false);
 
@@ -1524,39 +1531,36 @@ class WorldScene extends Phaser.Scene {
     }
 
     showMessage(message, type = 'info') {
-        // DO010: Color-coded messages
-        let color = '#d8e8d2';
-        if (type === 'success') color = '#7ab87a';
-        else if (type === 'warning') color = '#d4c070';
-        else if (type === 'error') color = '#e27070';
+        if (!this.messageText || !this.messageText.active) return;
 
-        this.messageText.setText(message);
-        this.messageText.setColor(color);
+        // Keep important feedback visible above every gameplay panel.
+        const colors = {
+            info: '#f0f5ed',
+            success: '#9be29b',
+            warning: '#ffe08a',
+            error: '#ff9999',
+        };
+        this.messageText.setText(String(message));
+        this.messageText.setColor(colors[type] || colors.info);
+        this.messageText.setDepth(10000);
+        this.messageText.setPosition(this.scale.width / 2, 118);
+        this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, this.scale.width - 48)), true);
+        this.messageText.setAlpha(1);
         this.messageText.setVisible(true);
 
-        // DO010: Fade-in animation
-        this.messageText.setAlpha(0);
-        this.tweens.add({
-            targets: this.messageText,
-            alpha: 1,
-            duration: 200,
-            ease: 'Power2',
-        });
+        // Restart the lifetime so consecutive messages do not disappear early.
+        this.tweens.killTweensOf(this.messageText);
+        if (this.messageHideEvent) this.messageHideEvent.remove(false);
 
-        if (this.messageHideEvent) {
-            this.messageHideEvent.remove(false);
-        }
-
-        this.messageHideEvent = this.time.delayedCall(1800, () => {
-            // DO010: Fade-out animation
+        this.messageHideEvent = this.time.delayedCall(3000, () => {
             this.tweens.add({
                 targets: this.messageText,
                 alpha: 0,
-                duration: 200,
+                duration: 250,
                 ease: 'Power2',
                 onComplete: () => {
-                    this.messageText.setVisible(false);
-                }
+                    if (this.messageText?.active) this.messageText.setVisible(false);
+                },
             });
         });
     }
@@ -2140,7 +2144,8 @@ led to this moment.`, {
         }
 
         if (this.messageText) {
-            this.messageText.setPosition(w / 2, h - 54);
+            this.messageText.setPosition(w / 2, 118);
+            this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, w - 48)), true);
         }
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - 72, 72);
