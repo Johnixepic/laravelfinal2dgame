@@ -1218,16 +1218,15 @@ class WorldScene extends Phaser.Scene {
 
         let cardY = 0;
 
-        const recipeMaskShape = this.add.graphics();
-        recipeMaskShape.setPosition(px, py);
+        // Keep the mask graphics off the visible display list. It is still used
+        // by Phaser's geometry-mask renderer, but cannot paint a white rectangle.
+        if (this.recipeMaskShape) this.recipeMaskShape.destroy();
+        const recipeMaskShape = this.make.graphics({ x: px, y: py, add: false });
         recipeMaskShape.fillStyle(0xffffff, 1);
         recipeMaskShape.fillRect(-185, -95, 370, 205);
 
         const recipeMask = recipeMaskShape.createGeometryMask();
         recipeScrollArea.setMask(recipeMask);
-        // The geometry is used only as a mask; rendering it caused a white block
-        // at the top-left of the game viewport.
-        recipeMaskShape.setVisible(false);
         this.recipeMaskShape = recipeMaskShape;
         this.recipeScrollArea = recipeScrollArea;
         this.recipeScrollOffset = 0;
