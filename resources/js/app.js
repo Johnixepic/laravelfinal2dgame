@@ -1360,6 +1360,7 @@ class WorldScene extends Phaser.Scene {
 
         this.createCompass();
         this.refreshInventoryUI();
+        this.refreshRecipeUI();
     }
 
     // ------------------------------------------------------------
