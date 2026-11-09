@@ -2259,28 +2259,9 @@ THE END`, {
         });
     }
 
-    // DO019: Reset game state for replay
+    // DO019: Reset every gameplay system and replay from a clean start.
     restartGame() {
-        // Reset GameState
-        GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
-        GameState.equipment = { saw: false, hammer: false, crowbar: false, screwdriver: false };
-        GameState.boatStage = 0;
-        GameState.boatStagesCompleted = [false, false, false, false];
-        GameState.boatBuilt = false;
-        GameState.workbenchDiscovered = false;
-        GameState.started = true;
-        localStorage.removeItem('tlc-save-v1');
-
-        // Destroy ending overlay
-        if (this.endingOverlay) {
-            this.endingOverlay.destroy();
-            this.endingOverlay = null;
-        }
-        this.endingActive = false;
-        this.won = false;
-
-        // Restart from MAP1
-        this.scene.restart();
+        this.startNewGame();
     }
 
     refreshBoatUI() {
