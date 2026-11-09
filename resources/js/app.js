@@ -1386,6 +1386,7 @@ class WorldScene extends Phaser.Scene {
         overlay.add(shade);
 
         const titleText = mode === 'title' ? 'THE LAST CONNECTION'
+            : mode === 'confirm-new' ? 'START A NEW GAME?'
             : mode === 'ending' ? 'JOURNEY COMPLETE'
             : 'PAUSED';
         const title = this.add.text(0, -245, titleText, {
@@ -1490,7 +1491,7 @@ class WorldScene extends Phaser.Scene {
         GameState.workbenchDiscovered = false;
         GameState.objectStates = {};
         GameState.started = true;
-        localStorage.removeItem('tlc-save-v1');
+        try { localStorage.removeItem('tlc-save-v1'); } catch (error) { /* Starting a new run must still work if storage is blocked. */ }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
 
@@ -2468,10 +2469,10 @@ led to this moment.`, {
 
             let idx = 0;
             let idy = 0;
-            if (this.keys.left.isDown || this.keys.A.isDown) idx -= 1;
-            if (this.keys.right.isDown || this.keys.D.isDown) idx += 1;
-            if (this.keys.up.isDown || this.keys.W.isDown) idy -= 1;
-            if (this.keys.down.isDown || this.keys.S.isDown) idy += 1;
+            if (this.keys.left.isDown || this.keys.A.isDown || this.touchKeys?.left) idx -= 1;
+            if (this.keys.right.isDown || this.keys.D.isDown || this.touchKeys?.right) idx += 1;
+            if (this.keys.up.isDown || this.keys.W.isDown || this.touchKeys?.up) idy -= 1;
+            if (this.keys.down.isDown || this.keys.S.isDown || this.touchKeys?.down) idy += 1;
 
             if (idx !== 0 && idy !== 0) {
                 const length = Math.hypot(idx, idy);
