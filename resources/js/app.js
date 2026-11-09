@@ -1114,21 +1114,21 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         // Inventory is a dedicated viewport-fixed panel, above the workbench layer.
-        this.inventoryPanel = this.add.rectangle(this.scale.width - 210, 250, 380, 460, 0x0b1710, 0.98)
+        this.inventoryPanel = this.add.rectangle(this.scale.width - 260, 380, 480, 640, 0x0b1710, 0.98)
             .setScrollFactor(0)
             .setDepth(5000)
             .setVisible(false);
 
         this.inventoryText = this.add.text(
-            this.scale.width - 380, 42, '',
+            this.scale.width - 480, 75, '',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '16px',
+                fontSize: '14px',
                 color: '#e5f0df',
                 padding: { x: 8, y: 8 },
-                lineSpacing: 8,
+                lineSpacing: 4,
                 align: 'left',
-                wordWrap: { width: 330 },
+                wordWrap: { width: 420 },
             }
         )
             .setScrollFactor(0)
@@ -2372,11 +2372,11 @@ led to this moment.`, {
         const h = this.scale.height;
 
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 210, 250);
+            this.inventoryPanel.setPosition(w - 260, 380);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 380, 42);
-            this.inventoryText.setWordWrapWidth(330, true);
+            this.inventoryText.setPosition(w - 480, 75);
+            this.inventoryText.setWordWrapWidth(420, true);
         }
 
         if (this.boatPanel) {
@@ -2514,6 +2514,7 @@ led to this moment.`, {
 
         this.nearbyObject = this.findNearbyObject();
 
+        const hadOpenPanelBeforeEscape = this.craftingOpen || this.inventoryOpen;
         if (escapePressed && this.craftingOpen) {
             this.craftingOpen = false;
             this.craftingPanel.setVisible(false);
@@ -2523,7 +2524,7 @@ led to this moment.`, {
             this.inventoryPanel.setVisible(false);
             this.inventoryText.setVisible(false);
         }
-        if (escapePressed && !this.craftingOpen && !this.inventoryOpen) {
+        if (escapePressed && !hadOpenPanelBeforeEscape && !this.craftingOpen && !this.inventoryOpen) {
             this.openMenu(this.won ? 'ending' : 'pause');
             this.interactionWasDown = interactionDown;
             this.escapeWasDown = escapeDown;
