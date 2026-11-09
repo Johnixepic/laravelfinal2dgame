@@ -459,6 +459,8 @@ class WorldScene extends Phaser.Scene {
         const mapDef = MAPS[startMapId] || MAPS.MAP1;
         this.currentMapId = startMapId;
         this.mapDef = mapDef;
+        // Scene restarts reuse WorldScene; discard stale UI GameObject references.
+        this.mapLabel = null;
         this.cols = mapDef.dims.cols;
         this.rows = mapDef.dims.rows;
         this.worldW = this.cols * TILE_W;
@@ -2044,7 +2046,7 @@ led to this moment.`, {
         const mapName = this.mapDef.name;
         const mapId = this.mapDef.id;
         // Update the header text on screen
-        if (this.mapLabel) {
+        if (this.mapLabel && this.mapLabel.scene === this && this.mapLabel.active) {
             this.mapLabel.setText(`${mapName}  /  ${mapId}`);
         } else {
             this.mapLabel = this.add.text(24, 66, `${mapName}  /  ${mapId}`, {
