@@ -74,11 +74,27 @@ assert.match(source, /this\.createCompass\(\)/);
 assert.match(source, /createCompass\(\) \{/);
 assert.match(source, /updateCompass\(dx, dy\) \{/);
 assert.match(source, /root\.setScrollFactor\(0\)/);
-assert.match(source, /this\.compassRoot\.setPosition\(w - 48, 116\)/);
+assert.match(source, /this\.compassRoot\.setPosition\(w - 72, 72\)/);
 assert.match(source, /this\.compassNeedle\.setRotation\(rotations\[this\.facingDirection\]\)/);
 assert.match(source, /this\.scale\.on\('resize', this\.repositionUI, this\)/);
 assert.match(source, /this\.updateCompass\(idx, idy\)/);
 assert.match(source, /Scroll to browse/);
+
+// TLC-025: texture registration is safe when Phaser recreates a scene.
+assert.equal(
+    (source.match(/if \(this\.textures\.exists\(key\)\)/g) || []).length,
+    2,
+    'Both world and boat texture helpers must reuse existing texture keys'
+);
+
+// TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
+assert.match(source, /width: 1920,\s*height: 1080/);
+assert.match(source, /mode: Phaser\.Scale\.FIT/);
+assert.match(source, /this\.inventoryPanel\.setPosition\(w - 140, 230\)/);
+assert.match(source, /this\.inventoryText\.setPosition\(w - 260, 38\)/);
+assert.match(source, /this\.messageText\.setPosition\(w \/ 2, h - 54\)/);
+assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
+
 
 
 // TLC-024: visible gates and transitions share the exact exit tile coordinates.
