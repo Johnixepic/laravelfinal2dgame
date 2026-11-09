@@ -176,5 +176,28 @@ assert.match(source, /this\.playSfx\('victory'\)/);
 assert.match(source, /keyboard\.once\('keydown-R'/);
 assert.match(source, /GameState\.survival = \{ \.\.\.this\.survival \}/);
 
+// TLC-027: scene lifecycle and full save restoration.
+assert.match(source, /this\.won = false;[\s\S]*?this\.endingActive = false;/);
+assert.match(source, /GameState\.audioEnabled = true;/);
+assert.match(source, /GameState\.objectStates = JSON\.parse\(JSON\.stringify\(save\.objectStates\)\)/);
+assert.match(source, /GameState\.survival = \{ \.\.\.save\.survival \}/);
+assert.match(source, /GameState\.audioEnabled = save\.audioEnabled !== false/);
+assert.match(source, /const validInventory = save\?\.inventory/);
+assert.match(source, /const validEquipment = save\?\.equipment/);
+assert.match(source, /const validBoat = Number\.isInteger\(save\?\.boatStage\)/);
+assert.match(source, /const validSurvival = save\?\.survival/);
+assert.match(source, /const validObjectStates = save\?\.objectStates/);
+assert.match(source, /previousSave\.objectStates = JSON\.parse\(JSON\.stringify\(GameState\.objectStates\)\)/);
+assert.match(source, /this\.won = false;[\s\S]*?this\.endingActive = false;[\s\S]*?this\.menuOpen = false;/);
+
+// TLC-028: regional gatherable loot profiles now create collectible world objects.
+assert.match(source, /const profile = MAP_LOOT_PROFILES\[mapId\]/);
+assert.match(source, /kind', 'gatherable'/);
+assert.match(source, /itemKey', itemKey/);
+assert.match(source, /if \(kind === 'gatherable'\)/);
+assert.match(source, /const amount = itemKey === 'machinery_salvage' \? 1 : 2/);
+assert.match(source, /object\.setAlpha\(0\.35\)/);
+assert.match(source, /const blocked = this\.obstacles\.getChildren\(\)\.some/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
