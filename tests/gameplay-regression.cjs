@@ -209,4 +209,4 @@ for (const recipeId of ['recycleBranches', 'processDriftwood', 'twistFibers', 't
 assert.match(source, /this\.inventoryWasDown = false;[\s\S]*?this\.eatWasDown = false;/);
 
 console.log('Gameplay regression checks: PASS');
-console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
+console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
