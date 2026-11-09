@@ -591,6 +591,7 @@ class WorldScene extends Phaser.Scene {
 
         // DO010: Position UI panels
         this.repositionUI();
+        this.scale.off('resize', this.repositionUI, this);
         this.scale.on('resize', this.repositionUI, this);
     }
 
