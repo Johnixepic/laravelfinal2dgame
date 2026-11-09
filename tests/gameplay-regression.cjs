@@ -59,6 +59,31 @@ assert.match(source, /MAP3: \{ scrap: 2, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP4: \{ scrap: 1, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 
+// TLC-024: the Workbench mask must cover the panel, not the world origin.
+assert.match(source, /recipeMaskShape\.setPosition\(px, py\)/);
+assert.match(source, /recipeMaskShape\.setVisible\(false\)/);
+assert.match(source, /recipeScrollArea\.setMask\(recipeMask\)/);
+assert.match(source, /this\.input\.on\('wheel'/);
+assert.match(source, /this\.recipeScrollArea\.setY\(-43 - this\.recipeScrollOffset\)/);
+assert.match(source, /this\.getItem\(k\)\/\$\{a\}/);
+assert.match(source, /READY TO CRAFT/);
+assert.match(source, /MISSING MATERIALS/);
+
+// TLC-024: compass is fixed to the viewport and follows the player's cardinal heading.
+assert.match(source, /this\.createCompass\(\)/);
+assert.match(source, /createCompass\(\) \{/);
+assert.match(source, /updateCompass\(dx, dy\) \{/);
+assert.match(source, /root\.setScrollFactor\(0\)/);
+assert.match(source, /this\.compassRoot\.setPosition\(w - 48, 116\)/);
+assert.match(source, /this\.compassNeedle\.setRotation\(rotations\[this\.facingDirection\]\)/);
+
+// TLC-024: visible gates and transitions share the exact exit tile coordinates.
+assert.match(source, /Draw each exit gate from the same tile coordinates used by transitions/);
+assert.match(source, /const p = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
+assert.match(source, /const gatePosition = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
+assert.match(source, /if \(distance <= 58\)/);
+assert.match(source, /return normalizedX \+ normalizedY <= 1\.03/);
+
 // Boat stages are sequential; sailing requires a deliberate interaction on MAP5.
 assert.match(source, /const BOAT_STAGES = \[\s*\{ id: 'hull'/);
 assert.match(source, /checkWinCondition\(interactionPressed = false\)/);
