@@ -2121,13 +2121,18 @@ class WorldScene extends Phaser.Scene {
             warning: '#ffe08a',
             error: '#ff9999',
         };
+        this.messageText.setActive(true);
         this.messageText.setText(String(message));
         this.messageText.setColor(colors[type] || colors.info);
-        this.messageText.setDepth(10000);
-        this.messageText.setPosition(this.scale.width / 2, 118);
+        this.messageText.setDepth(30000);
+        this.messageText.setScrollFactor(0, 0);
+        this.messageText.setOrigin(0.5, 0);
+        this.messageText.setPosition(this.scale.width / 2, 72);
         this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, this.scale.width - 48)), true);
         this.messageText.setAlpha(1);
         this.messageText.setVisible(true);
+        // Ensure the toast is rendered above every other scene object.
+        this.children.bringToTop(this.messageText);
 
         // Restart the lifetime so consecutive messages do not disappear early.
         this.tweens.killTweensOf(this.messageText);
@@ -2185,7 +2190,12 @@ class WorldScene extends Phaser.Scene {
 
         if (kind === 'house') {
             if (object.getData('searched')) {
-                this.showMessage(`${name} has already been searched.`, 'warning');
+                this.showMessage(`${name} has already been searched. No supplies remain here.`, 'warning');
+                if (this.interactionPrompt) {
+                    this.interactionPrompt.setText(`${name} — ALREADY SEARCHED`);
+                    this.interactionPrompt.setColor('#ffe08a');
+                    this.interactionPrompt.setVisible(true);
+                }
                 return;
             }
 
@@ -2260,7 +2270,12 @@ class WorldScene extends Phaser.Scene {
 
         if (kind === 'tree') {
             if (object.getData('harvested')) {
-                this.showMessage('This tree has already been harvested.', 'warning');
+                this.showMessage('This tree has already been harvested. No wood remains.', 'warning');
+                if (this.interactionPrompt) {
+                    this.interactionPrompt.setText('TREE — ALREADY HARVESTED');
+                    this.interactionPrompt.setColor('#ffe08a');
+                    this.interactionPrompt.setVisible(true);
+                }
                 return;
             }
 
@@ -2279,6 +2294,11 @@ class WorldScene extends Phaser.Scene {
         if (kind === 'gatherable') {
             if (object.getData('harvested')) {
                 this.showMessage(name + ' has already been collected.', 'warning');
+                if (this.interactionPrompt) {
+                    this.interactionPrompt.setText(`${name} — ALREADY COLLECTED`);
+                    this.interactionPrompt.setColor('#ffe08a');
+                    this.interactionPrompt.setVisible(true);
+                }
                 return;
             }
 
