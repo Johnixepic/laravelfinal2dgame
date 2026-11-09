@@ -703,6 +703,19 @@ class WorldScene extends Phaser.Scene {
             ctx.fillRect(18, 29, 5, 7);
         }, 'player', 32, 38);
 
+        drawToBitmap.call(this, function (ctx) {
+            ctx.fillStyle = '#5b4934';
+            ctx.fillRect(5, 12, 34, 27);
+            ctx.fillStyle = '#9b7748';
+            ctx.fillRect(2, 8, 40, 8);
+            ctx.fillStyle = '#c5a36b';
+            ctx.fillRect(10, 17, 24, 4);
+            ctx.fillRect(10, 25, 24, 4);
+            ctx.fillStyle = '#3d3024';
+            ctx.fillRect(8, 39, 5, 5);
+            ctx.fillRect(31, 39, 5, 5);
+        }, 'resource_cache', 44, 46);
+
         this.createBoatTextures();
     }
 
@@ -1033,6 +1046,23 @@ class WorldScene extends Phaser.Scene {
             tree.setData('kind', 'tree');
             tree.setData('harvested', false);
         }
+
+        // Place region-specific salvage caches from the loot profiles.
+        // Fixed tile slots keep resources reachable and deterministic on every run.
+        const profile = MAP_LOOT_PROFILES[mapId] || {};
+        const resourceTiles = [[14, 6], [6, 14], [23, 14], [14, 24], [24, 23], [6, 24]];
+        (profile.gatherables || []).forEach((itemKey, index) => {
+            if (!ITEM_DEFS[itemKey]) return;
+            const [i, j] = resourceTiles[index % resourceTiles.length];
+            const p = this.tilePosition(i, j);
+            const cache = this.obstacles.create(p.x, p.y - 8, 'resource_cache');
+            cache.setDepth(cache.y);
+            cache.refreshBody();
+            cache.setData('name', ITEM_DEFS[itemKey].name);
+            cache.setData('kind', 'gatherable');
+            cache.setData('itemKey', itemKey);
+            cache.setData('harvested', false);
+        });
 
         // Draw each exit gate from the same tile coordinates used by transitions.
         // Gates are visual markers only, so they never block the player.
@@ -2126,6 +2156,28 @@ class WorldScene extends Phaser.Scene {
 
             object.setData('harvested', true);
             this.addItem('wood', 3);
+            return;
+        }
+
+        if (kind === 'gatherable') {
+            if (object.getData('harvested')) {
+                this.showMessage(name + ' has already been collected.');
+                return;
+            }
+
+            const itemKey = object.getData('itemKey');
+            if (!ITEM_DEFS[itemKey]) {
+                this.showMessage('This resource cannot be collected.', 'error');
+                return;
+            }
+
+            const amount = itemKey === 'machinery_salvage' ? 1 : 2;
+            const added = this.addItem(itemKey, amount);
+            if (added > 0) {
+                object.setData('harvested', true);
+                object.setAlpha(0.35);
+                this.showMessage('Collected ' + added + ' ' + ITEM_DEFS[itemKey].name + '.', 'success');
+            }
         }
     }
 
