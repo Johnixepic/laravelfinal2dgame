@@ -61,10 +61,10 @@ assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 
 // TLC-024: the Workbench mask must cover the panel, not the world origin.
 assert.match(source, /this\.make\.graphics\(\{ x: px, y: py, add: false \}\)/);
-assert.match(source, /recipeMaskShape\.fillRect\(-185, -95, 370, 205\)/);
+assert.match(source, /recipeMaskShape\.fillRect\(-300, -305, 600, 575\)/);
 assert.match(source, /recipeScrollArea\.setMask\(recipeMask\)/);
 assert.match(source, /this\.input\.on\('wheel'/);
-assert.match(source, /this\.recipeScrollArea\.setY\(-43 - this\.recipeScrollOffset\)/);
+assert.match(source, /this\.recipeScrollArea\.setY\(-270 - this\.recipeScrollOffset\)/);
 assert.match(source, /\$\{ITEM_DEFS\[k\]\.name\}: \$\{this\.getItem\(k\)\}\/\$\{a\}/);
 assert.match(source, /READY TO CRAFT/);
 assert.match(source, /MISSING MATERIALS/);
@@ -92,7 +92,7 @@ assert.match(source, /width: 1920,\s*height: 1080/);
 assert.match(source, /mode: Phaser\.Scale\.FIT/);
 assert.match(source, /this\.inventoryPanel\.setPosition\(w - 140, 230\)/);
 assert.match(source, /this\.inventoryText\.setPosition\(w - 260, 38\)/);
-assert.match(source, /this\.messageText\.setPosition\(w \/ 2, h - 54\)/);
+assert.match(source, /this\.messageText\.setPosition\(w \/ 2, 118\)/);
 assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
 assert.match(source, /this\.mapLabel = null;/);
 assert.match(source, /this\.mapLabel && this\.mapLabel\.scene === this && this\.mapLabel\.active/);
@@ -105,6 +105,13 @@ assert.match(source, /Draw each exit gate from the same tile coordinates used by
 assert.match(source, /const p = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
 assert.match(source, /const gatePosition = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
 assert.match(source, /if \(distance <= 58\)/);
+assert.match(source, /entryTile: \{ i: 2, j: 15 \}/);
+assert.match(source, /entryTile: \{ i: 27, j: 15 \}/);
+assert.match(source, /const panelW = 640, panelH = 700/);
+assert.match(source, /panelBorder\.strokeRect\(-320, -350, 640, 700\)/);
+assert.match(source, /this\.add\.text\(\s*275,\s*-20,/);
+assert.match(source, /\)\.setOrigin\(1, 0\);/);
+assert.match(source, /left: this\.craftingPanel\.x - 320/);
 assert.match(source, /return normalizedX \+ normalizedY <= 1\.03/);
 
 // Boat stages are sequential; sailing requires a deliberate interaction on MAP5.
