@@ -1002,6 +1002,28 @@ class WorldScene extends Phaser.Scene {
             tree.setData('kind', 'tree');
             tree.setData('harvested', false);
         }
+
+        // Draw each exit gate from the same tile coordinates used by transitions.
+        // Gates are visual markers only, so they never block the player.
+        this.exitGates = [];
+        for (const exit of (this.mapDef.exits || [])) {
+            const p = this.tilePosition(exit.fromTile.i, exit.fromTile.j);
+            const gate = this.add.graphics();
+            gate.setPosition(p.x, p.y - 24);
+            gate.fillStyle(0x4a3525, 1);
+            gate.fillRect(-19, -4, 5, 38);
+            gate.fillRect(14, -4, 5, 38);
+            gate.fillRect(-22, -8, 44, 6);
+            gate.fillStyle(0x9b7748, 1);
+            gate.fillRect(-14, 1, 3, 27);
+            gate.fillRect(-5, 1, 3, 27);
+            gate.fillRect(4, 1, 3, 27);
+            gate.fillRect(13, 1, 3, 27);
+            gate.lineStyle(2, 0xd0b27a, 1);
+            gate.strokeRect(-22, -8, 44, 42);
+            gate.setDepth(p.y + 2);
+            this.exitGates.push(gate);
+        }
     }
 
     createPlayer(startTile) {
@@ -1161,10 +1183,9 @@ class WorldScene extends Phaser.Scene {
         this.craftingPanel = this.add.container(px, py);
         this.craftingPanel.setScrollFactor(0);
         this.craftingPanel.setDepth(3000);
+        this.craftingPanelPosition = { x: px, y: py };
 
         const panelBorder = this.add.graphics();
-        panelBorder.fillStyle(0x0f1c12, 1);
-        panelBorder.fillRect(-195, -150, 390, 300);
         panelBorder.lineStyle(2, 0x9bb58b, 1);
         panelBorder.strokeRect(-195, -150, 390, 300);
 
@@ -1185,13 +1206,20 @@ class WorldScene extends Phaser.Scene {
         let cardY = 0;
 
         const recipeMaskShape = this.add.graphics();
+        recipeMaskShape.setPosition(px, py - 43);
         recipeMaskShape.fillStyle(0xffffff, 1);
         recipeMaskShape.fillRect(-185, -105, 370, 205);
 
         const recipeMask = recipeMaskShape.createGeometryMask();
         recipeScrollArea.setMask(recipeMask);
+        // The geometry is used only as a mask; rendering it caused a white block
+        // at the top-left of the game viewport.
+        recipeMaskShape.setVisible(false);
+        this.recipeMaskShape = recipeMaskShape;
+        this.recipeScrollArea = recipeScrollArea;
+        this.recipeScrollOffset = 0;
 
-        this.craftingPanel.add([panelBorder, panelBackground, panelTitle, recipeScrollArea]);
+        this.craftingPanel.add([panelBackground, panelBorder, panelTitle, recipeScrollArea]);
 
         for (const recipe of RECIPES) {
             const card = this.add.container(0, cardY);
@@ -1219,7 +1247,7 @@ class WorldScene extends Phaser.Scene {
 
             const ingredientText = this.add.text(-175, 6,
                 Object.entries(recipe.ingredients).map(
-                    ([k, a]) => `${ITEM_DEFS[k].name}: ${a}`
+                    ([k, a]) => `${ITEM_DEFS[k].name}: ${this.getItem(k)}/${a}`
                 ).join('  |  '),
                 {
                     fontFamily: 'sans-serif',
@@ -1231,14 +1259,21 @@ class WorldScene extends Phaser.Scene {
             card.add(ingredientText);
             card.setData('ingredientText', ingredientText);
 
-            const descText = this.add.text(175, -4, recipe.desc, {
-                fontFamily: 'sans-serif',
-                fontSize: '10px',
-                color: canCraft ? '#a8c0a0' : '#4a5a42',
-                align: 'right',
-                wordWrap: { width: 170 },
-            });
+            const descText = this.add.text(
+                175,
+                -4,
+                `${recipe.desc}\n${canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`,
+                {
+                    fontFamily: 'sans-serif',
+                    fontSize: '10px',
+                    color: canCraft ? '#a8c0a0' : '#8a927f',
+                    align: 'right',
+                    wordWrap: { width: 170 },
+                }
+            );
             card.add(descText);
+            card.setData('descText', descText);
+            card.setData('cardBorder', cardBorder);
 
             cardBorder.clear();
             cardBorder.lineStyle(1, canCraft ? 0x9bb58b : 0x3a4a32, 1);
@@ -1265,10 +1300,30 @@ class WorldScene extends Phaser.Scene {
             cardY += 56;
         }
 
-        this.craftingPanel.add([panelBorder, panelBackground, panelTitle, recipeScrollArea]);
         this.craftingPanel.setVisible(false);
         this.craftingOpen = false;
+        this.recipeScrollMax = Math.max(0, cardY - 205);
 
+        this.input.on('wheel', (pointer, currentlyOver, deltaX, deltaY) => {
+            if (!this.craftingOpen || !this.recipeScrollArea) return;
+            const bounds = {
+                left: this.craftingPanel.x - 195,
+                right: this.craftingPanel.x + 195,
+                top: this.craftingPanel.y - 150,
+                bottom: this.craftingPanel.y + 150,
+            };
+            if (pointer.x < bounds.left || pointer.x > bounds.right ||
+                pointer.y < bounds.top || pointer.y > bounds.bottom) return;
+
+            this.recipeScrollOffset = Phaser.Math.Clamp(
+                this.recipeScrollOffset + deltaY * 0.65,
+                0,
+                this.recipeScrollMax
+            );
+            this.recipeScrollArea.setY(-43 - this.recipeScrollOffset);
+        });
+
+        this.createCompass();
         this.refreshInventoryUI();
     }
 
@@ -1390,11 +1445,25 @@ class WorldScene extends Phaser.Scene {
 
             const nameText = card.getData('nameText');
             const ingredientText = card.getData('ingredientText');
+            const descText = card.getData('descText');
+            const cardBorder = card.getData('cardBorder');
             if (nameText) {
-                nameText.setColor(canCraft ? '#e2f0d8' : '#7a8a72');
+                nameText.setColor(canCraft ? '#e2f0d8' : '#a0a895');
             }
             if (ingredientText) {
-                ingredientText.setColor(canCraft ? '#c8dcc0' : '#5a6a52');
+                ingredientText.setText(Object.entries(recipe.ingredients).map(
+                    ([key, amount]) => `${ITEM_DEFS[key].name}: ${this.getItem(key)}/${amount}`
+                ).join('  |  '));
+                ingredientText.setColor(canCraft ? '#c8dcc0' : '#a0a895');
+            }
+            if (descText) {
+                descText.setText(`${recipe.desc}\n${canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`);
+                descText.setColor(canCraft ? '#a8c0a0' : '#8a927f');
+            }
+            if (cardBorder) {
+                cardBorder.clear();
+                cardBorder.lineStyle(1, canCraft ? 0x9bb58b : 0x59634f, 1);
+                cardBorder.strokeRect(-186, -25, 372, 50);
             }
         }
     }
@@ -1885,7 +1954,8 @@ led to this moment.`, {
         const halfHeight = ((this.rows - 1) * TILE_H) / 2;
         const normalizedX = Math.abs(x - centerX) / halfWidth;
         const normalizedY = Math.abs(y - centerY) / halfHeight;
-        return normalizedX + normalizedY <= 0.94;
+        // Include the actual outer tile centers; exit tiles sit on this boundary.
+        return normalizedX + normalizedY <= 1.03;
     }
 
     pixelToTile(x, y) {
@@ -1909,15 +1979,19 @@ led to this moment.`, {
     // Check if player is stepping on a map exit path
     checkMapTransition() {
         if (this.indoorMode || this.transitioningMap || this.endingActive || this.won) return;
-        const tile = this.playerTile();
-        const exits = this.mapDef.exits || [];
 
-        for (const exit of exits) {
-            // Check if player is near the exit tile
-            const dx = Math.abs(tile.i - exit.fromTile.i);
-            const dy = Math.abs(tile.j - exit.fromTile.j);
-            if (dx <= 1 && dy <= 1) {
-                // Trigger transition
+        for (const exit of (this.mapDef.exits || [])) {
+            // Use the same tile center as the visible gate; this avoids a detached
+            // marker and prevents broad, premature transitions beside the path.
+            const gatePosition = this.tilePosition(exit.fromTile.i, exit.fromTile.j);
+            const distance = Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                gatePosition.x,
+                gatePosition.y
+            );
+
+            if (distance <= 58) {
                 this.transitionToMap(exit.toMap, exit.entryTile);
                 return;
             }
@@ -1965,6 +2039,56 @@ led to this moment.`, {
         }
     }
 
+    createCompass() {
+        const root = this.add.container(this.scale.width - 48, 116);
+        root.setScrollFactor(0);
+        root.setDepth(1600);
+
+        const background = this.add.circle(0, 0, 34, 0x0f1c12, 0.94);
+        background.setStrokeStyle(2, 0x9bb58b, 1);
+
+        const labelStyle = {
+            fontFamily: 'sans-serif',
+            fontSize: '10px',
+            fontStyle: 'bold',
+            color: '#e2f0d8',
+        };
+        const north = this.add.text(0, -25, 'N', labelStyle).setOrigin(0.5);
+        const east = this.add.text(24, 0, 'E', labelStyle).setOrigin(0.5);
+        const south = this.add.text(0, 25, 'S', labelStyle).setOrigin(0.5);
+        const west = this.add.text(-24, 0, 'W', labelStyle).setOrigin(0.5);
+
+        const needle = this.add.graphics();
+        needle.fillStyle(0xd9e5d0, 1);
+        needle.beginPath();
+        needle.moveTo(0, -17);
+        needle.lineTo(6, 5);
+        needle.lineTo(0, 1);
+        needle.lineTo(-6, 5);
+        needle.closePath();
+        needle.fillPath();
+        needle.fillStyle(0xc96b55, 1);
+        needle.fillTriangle(-2, 0, 2, 0, 0, 8);
+
+        root.add([background, north, east, south, west, needle]);
+        this.compassRoot = root;
+        this.compassNeedle = needle;
+        this.facingDirection = 'N';
+    }
+
+    updateCompass(dx, dy) {
+        if (!this.compassNeedle || (dx === 0 && dy === 0)) return;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            this.facingDirection = dx >= 0 ? 'E' : 'W';
+        } else {
+            this.facingDirection = dy >= 0 ? 'S' : 'N';
+        }
+
+        const rotations = { N: 0, E: Math.PI / 2, S: Math.PI, W: -Math.PI / 2 };
+        this.compassNeedle.setRotation(rotations[this.facingDirection]);
+    }
+
     // DO010: Reposition UI panels based on viewport size
     repositionUI() {
         const w = this.scale.width;
@@ -1986,6 +2110,16 @@ led to this moment.`, {
 
         if (this.messageText) {
             this.messageText.setPosition(w / 2, h - 40);
+        }
+        if (this.compassRoot) {
+            this.compassRoot.setPosition(w - 48, 116);
+        }
+        if (this.craftingPanel) {
+            const panelH = 300;
+            const panelY = Math.max(panelH / 2 + 10, Math.min(h - panelH / 2 - 10, h / 2 - 40));
+            this.craftingPanel.setPosition(w / 2, panelY);
+            this.craftingPanelPosition = { x: w / 2, y: panelY };
+            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY - 43);
         }
     }
 
@@ -2190,6 +2324,8 @@ led to this moment.`, {
             dx /= length;
             dy /= length;
         }
+
+        this.updateCompass(dx, dy);
 
         const inside = this.isInsideIsland(this.player.x, this.player.y);
         if (!inside) {
