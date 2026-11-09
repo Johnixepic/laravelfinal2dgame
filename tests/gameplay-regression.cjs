@@ -149,6 +149,10 @@ assert.match(source, /this\.touchInteract/);
 assert.match(source, /this\.touchInventory/);
 assert.match(source, /if \(escapePressed && !hadOpenPanelBeforeEscape/);
 assert.match(source, /if \(name === 'Your Home'\)/);
+assert.match(source, /You already have the reusable/);
+assert.match(source, /alreadyOwned \? 'ALREADY OWNED'/);
+assert.match(source, /this\.refreshRecipeUI\(\);/);
+assert.match(source, /GameState\.workbenchDiscovered = true/);
 assert.match(source, /GameState\.started = false/);
 assert.match(source, /this\.openMenu\('ending'\)/);
 
