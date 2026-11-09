@@ -96,4 +96,4 @@ assert.match(update, /if \(this\.boatBuilt\) \{\s*this\.checkWinCondition\(true\
 assert.match(source, /GameState\.boatStagesCompleted = \[false, false, false, false\]/);
 
 console.log('Gameplay regression checks: PASS');
-console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression and explicit ending interaction.');
+console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
