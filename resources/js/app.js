@@ -1055,6 +1055,10 @@ class WorldScene extends Phaser.Scene {
             if (!ITEM_DEFS[itemKey]) return;
             const [i, j] = resourceTiles[index % resourceTiles.length];
             const p = this.tilePosition(i, j);
+            const blocked = this.obstacles.getChildren().some(object =>
+                Phaser.Math.Distance.Between(p.x, p.y - 8, object.x, object.y) < 72
+            );
+            if (blocked) return;
             const cache = this.obstacles.create(p.x, p.y - 8, 'resource_cache');
             cache.setDepth(cache.y);
             cache.refreshBody();
@@ -2844,7 +2848,7 @@ THE END`, {
                     : this.nearbyObject.getData('harvested');
                 const action = kind === 'house'
                     ? (alreadyUsed ? 'Already searched' : 'Search')
-                    : (alreadyUsed ? 'Already harvested' : 'Gather wood');
+                    : (alreadyUsed ? 'Already collected' : (kind === 'gatherable' ? 'Gather' : 'Gather wood'));
                 this.interactionPrompt.setText(
                     alreadyUsed ? `${name} — ${action}` : `E — ${action}: ${name}`
                 );
