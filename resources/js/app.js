@@ -2201,7 +2201,7 @@ THE END`, {
         }).setOrigin(0.5);
         overlay.add(body);
 
-        const credits = this.add.text(0, 170, 'Press R to play again  ·  Click here for more options', {
+        const credits = this.add.text(0, 170, 'THE LAST CONNECTION  ·  A Phaser + Laravel game\nPress R to play again  ·  Click here for more options', {
             fontFamily: 'sans-serif',
             fontSize: '14px',
             color: '#5a7a52',
