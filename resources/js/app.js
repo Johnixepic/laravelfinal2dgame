@@ -319,6 +319,10 @@ const ITEM_DEFS = {
     fasteners: { name: 'Fasteners', limit: 10, desc: 'Nails and screws for construction.', category: 'crafted-component' },
     machinery_salvage: { name: 'Machinery Salvage', limit: 8, desc: 'Gears and metal parts.', category: 'crafted-component' },
     fibers: { name: 'Fibers', limit: 15, desc: 'Natural fibers for crafting.', category: 'gatherable' },
+    boatPlank: { name: 'Boat Plank', limit: 20, desc: 'Prepared component for boat construction.', category: 'crafted-component' },
+    repairKit: { name: 'Repair Kit', limit: 5, desc: 'A kit for emergency repairs.', category: 'crafted-component' },
+    plank: { name: 'Plank', limit: 30, desc: 'Processed lumber for construction.', category: 'crafted-component' },
+    sailcloth: { name: 'Sailcloth', limit: 10, desc: 'Treated canvas for sails.', category: 'crafted-component' },
 };
 
 const BOAT_STAGES = [
@@ -447,6 +451,9 @@ class WorldScene extends Phaser.Scene {
         // DO022: Read persistent workbench discovery state
         this.workbenchDiscovered = GameState.workbenchDiscovered || false;
         this.indoorMode = false;
+        this.transitioningMap = false;
+        this.interactionWasDown = false;
+        this.escapeWasDown = false;
 
         // DO019: Initialize recipe card tracking
         this.recipeCards = [];
@@ -753,7 +760,7 @@ class WorldScene extends Phaser.Scene {
         const doorY = (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 + 20;
         this.indoorDoor = this.add.rectangle(doorX, doorY, 24, 12, 0x3e2723);
         this.indoorDoor.setDepth(5);
-        this.indorGrid.add(this.indoorDoor);
+        this.indoorGrid.add(this.indoorDoor);
 
         // Indoor prompt
         if (this.indoorPrompt) this.indoorPrompt.destroy();
@@ -772,13 +779,13 @@ class WorldScene extends Phaser.Scene {
         if (!this.indoorMode) return;
 
         // Destroy indoor scene elements
-        if (this.indorGrid) {
-            this.indorGrid.destroy();
-            this.indorGrid = null;
+        if (this.indoorGrid) {
+            this.indoorGrid.destroy();
+            this.indoorGrid = null;
         }
-        if (this.indorPrompt) {
-            this.indorPrompt.destroy();
-            this.indorPrompt = null;
+        if (this.indoorPrompt) {
+            this.indoorPrompt.destroy();
+            this.indoorPrompt = null;
         }
 
         // Restore outdoor elements
@@ -1241,42 +1248,43 @@ class WorldScene extends Phaser.Scene {
 
     addItem(key, amount) {
         const def = ITEM_DEFS[key];
-        if (!def) return 0;
+        if (!def || !Number.isInteger(amount) || amount <= 0) return 0;
 
         const current = this.inventory[key] || 0;
-        const space = def.limit - current;
-        if (space <= 0) {
+        const space = Math.max(0, def.limit - current);
+        const added = Math.min(amount, space);
+
+        if (added <= 0) {
             this.showMessage(`${def.name} storage is full.`);
             return 0;
         }
 
-        const added = Math.min(amount, space);
         this.inventory[key] = current + added;
-
-        if (added > 0) {
-            this.refreshInventoryUI();
-            this.showMessage(`+${added} ${def.name}`);
-        }
+        this.refreshInventoryUI();
 
         if (added < amount) {
-            this.showMessage(`${def.name} stack near limit — received ${added} of ${amount}.`);
+            this.showMessage(`${def.name} storage is nearly full — received ${added} of ${amount}.`);
+        } else {
+            this.showMessage(`+${added} ${def.name}`);
         }
 
         return added;
     }
 
     removeItem(key, amount) {
-        const current = this.inventory[key] || 0;
-        const canRemove = Math.min(amount, current);
-        if (canRemove <= 0) return false;
+        if (!Number.isInteger(amount) || amount <= 0) return false;
 
-        this.inventory[key] -= canRemove;
+        const current = this.inventory[key] || 0;
+        if (current < amount) return false;
+
+        this.inventory[key] = current - amount;
         this.refreshInventoryUI();
         return true;
     }
 
     hasItem(key, amount = 1) {
-        return (this.inventory[key] || 0) >= amount;
+        return Number.isFinite(amount) && amount >= 0 &&
+            (this.inventory[key] || 0) >= amount;
     }
 
     getItem(key) {
@@ -1284,7 +1292,8 @@ class WorldScene extends Phaser.Scene {
     }
 
     craftRecipe(recipe) {
-        // DO009: Check workbench requirement
+        if (!recipe || !recipe.ingredients || !recipe.result) return;
+
         if (recipe.workbenchRequired && !this.workbenchDiscovered) {
             this.showMessage('Must discover a workbench first!');
             return;
@@ -1299,20 +1308,49 @@ class WorldScene extends Phaser.Scene {
             return;
         }
 
-        for (const [key, amount] of Object.entries(recipe.ingredients)) {
-            this.removeItem(key, amount);
+        const result = recipe.result;
+        const resultAmount = result.amount || 1;
+
+        if (result.type === 'item') {
+            const outputDef = ITEM_DEFS[result.key];
+            if (!outputDef) {
+                this.showMessage(`Crafting failed: unknown item "${result.key}".`, 'error');
+                return;
+            }
+
+            if ((this.inventory[result.key] || 0) + resultAmount > outputDef.limit) {
+                this.showMessage(`${outputDef.name} storage is full. Free space before crafting.`, 'warning');
+                return;
+            }
+        } else if (result.type === 'equipment') {
+            if (!Object.prototype.hasOwnProperty.call(this.equipment, result.key)) {
+                this.showMessage('Crafting failed: unknown equipment.', 'error');
+                return;
+            }
+        } else {
+            this.showMessage('Crafting failed: invalid recipe output.', 'error');
+            return;
         }
 
-        const result = recipe.result;
+        // All ingredients were validated above; remove them only after output validation.
+        for (const [key, amount] of Object.entries(recipe.ingredients)) {
+            if (!this.removeItem(key, amount)) {
+                this.showMessage('Crafting was cancelled because inventory changed.', 'error');
+                return;
+            }
+        }
+
         if (result.type === 'equipment') {
             this.equipment[result.key] = true;
-            this.showMessage(`Crafted ${recipe.name}!`);
-        } else if (result.type === 'item') {
-            this.addItem(result.key, result.amount || 1);
-            this.showMessage(`Crafted ${recipe.name}!`);
+            GameState.equipment = this.equipment;
+            this.showMessage(`Crafted ${recipe.name}! The tool is reusable.`, 'success');
+        } else {
+            this.addItem(result.key, resultAmount);
+            this.showMessage(`Crafted ${recipe.name}!`, 'success');
         }
 
         this.refreshRecipeUI();
+        this.refreshInventoryUI();
     }
 
     refreshRecipeUI() {
@@ -1561,15 +1599,17 @@ class WorldScene extends Phaser.Scene {
     }
 
     // DO016: Check if all win conditions are met
-    checkWinCondition() {
-        if (this.won || !this.boatBuilt) return;
-
-        // DO022: Only trigger ending at MAP5 southeastern boat site
-        const nearby = this.findNearbyObject();
-        if (nearby && nearby.getData('kind') === 'boatSite' && this.currentMapId === 'MAP5') {
-            this.won = true;
-            this.showEnding();
+    checkWinCondition(interactionPressed = false) {
+        if (!interactionPressed || this.won || !this.boatBuilt || this.currentMapId !== 'MAP5') {
+            return false;
         }
+
+        const nearby = this.findNearbyObject();
+        if (!nearby || nearby.getData('kind') !== 'boatSite') return false;
+
+        this.won = true;
+        this.showEnding();
+        return true;
     }
 
     // DO016: Cinematic victory overlay
@@ -1813,6 +1853,7 @@ led to this moment.`, {
 
     // Check if player is stepping on a map exit path
     checkMapTransition() {
+        if (this.indoorMode || this.transitioningMap || this.endingActive || this.won) return;
         const tile = this.playerTile();
         const exits = this.mapDef.exits || [];
 
@@ -1829,6 +1870,9 @@ led to this moment.`, {
     }
 
     transitionToMap(mapId, entryTile) {
+        if (this.indoorMode || this.transitioningMap || !MAPS[mapId] || !entryTile) return;
+        this.transitioningMap = true;
+
         // Sync state to GameState before transition
         GameState.inventory = this.inventory;
         GameState.equipment = this.equipment;
@@ -1890,29 +1934,110 @@ led to this moment.`, {
         }
     }
 
-    update() {
-        const body = this.player.body;
+    update(time, delta = 16) {
+        const body = this.player?.body;
         if (!body) return;
+
+        const interactionDown = this.keys.E.isDown;
+        const escapeDown = this.keys.ESC.isDown;
+        const interactionPressed = interactionDown && !this.interactionWasDown;
+        const escapePressed = escapeDown && !this.escapeWasDown;
+
+        // Indoor movement is isolated from the outdoor player, objects and map exits.
+        if (this.indoorMode) {
+            const GRID_W = 5;
+            const GRID_H = 4;
+            const INDOOR_TILE = 32;
+            const SPEED = 120;
+            const step = Math.min(Math.max(delta, 0), 50) / 1000;
+
+            let idx = 0;
+            let idy = 0;
+            if (this.keys.left.isDown || this.keys.A.isDown) idx -= 1;
+            if (this.keys.right.isDown || this.keys.D.isDown) idx += 1;
+            if (this.keys.up.isDown || this.keys.W.isDown) idy -= 1;
+            if (this.keys.down.isDown || this.keys.S.isDown) idy += 1;
+
+            if (idx !== 0 && idy !== 0) {
+                const length = Math.hypot(idx, idy);
+                idx /= length;
+                idy /= length;
+            }
+
+            const clampedX = Phaser.Math.Clamp(
+                this.indoorPlayer.x + idx * SPEED * step,
+                INDOOR_TILE / 2,
+                (GRID_W - 0.5) * INDOOR_TILE
+            );
+            const clampedY = Phaser.Math.Clamp(
+                this.indoorPlayer.y + idy * SPEED * step,
+                INDOOR_TILE / 2,
+                (GRID_H - 0.5) * INDOOR_TILE
+            );
+
+            this.indoorPlayer.x = clampedX;
+            this.indoorPlayer.y = clampedY;
+            if (this.indoorPlayerSprite) {
+                this.indoorPlayerSprite.setPosition(clampedX, clampedY);
+            }
+
+            const indoorDef = (MAP_OBSTACLES[this.currentMapId]?.indoorHouses || [])
+                .find(h => h.buildingName === this.currentIndoorHouse);
+            const wbTile = indoorDef?.workbenchTile || { i: 3, j: 2 };
+            const wbX = wbTile.i * INDOOR_TILE + INDOOR_TILE / 2;
+            const wbY = wbTile.j * INDOOR_TILE + INDOOR_TILE / 2;
+            const distToWB = Math.hypot(clampedX - wbX, clampedY - wbY);
+
+            if (this.indoorPrompt) {
+                if (distToWB < INDOOR_TILE * 1.5 && !this.workbenchDiscovered) {
+                    this.indoorPrompt.setText('E — Discover workbench');
+                    this.indoorPrompt.setVisible(true);
+                } else if (this.workbenchDiscovered) {
+                    this.indoorPrompt.setText('Workbench discovered — ESC to exit.');
+                    this.indoorPrompt.setVisible(true);
+                } else {
+                    this.indoorPrompt.setVisible(false);
+                }
+            }
+
+            if (interactionPressed && distToWB < INDOOR_TILE * 1.5 && !this.workbenchDiscovered) {
+                this.workbenchDiscovered = true;
+                GameState.workbenchDiscovered = true;
+                this.showMessage('You discovered a workbench inside! Crafting is now available.', 'success');
+            }
+
+            if (interactionPressed) {
+                const doorX = 2 * INDOOR_TILE + INDOOR_TILE / 2;
+                const doorY = (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 + 20;
+                if (Math.hypot(clampedX - doorX, clampedY - doorY) < INDOOR_TILE) {
+                    this.exitIndoor();
+                }
+            }
+
+            if (escapePressed) this.exitIndoor();
+
+            this.interactionWasDown = interactionDown;
+            this.escapeWasDown = escapeDown;
+            return;
+        }
 
         this.nearbyObject = this.findNearbyObject();
 
-        if (this.keys.ESC.isDown && !this.escapeWasDown) {
-            if (this.craftingOpen) {
-                this.craftingOpen = false;
-                this.craftingPanel.setVisible(false);
-            }
+        if (escapePressed && this.craftingOpen) {
+            this.craftingOpen = false;
+            this.craftingPanel.setVisible(false);
         }
-        this.escapeWasDown = this.keys.ESC.isDown;
 
-        // Handle crafting key when panel is open
-        if (this.craftingOpen && this.keys.E.isDown && !this.interactionWasDown) {
+        if (this.craftingOpen && interactionPressed) {
             const nearby = this.findNearbyObject();
             if (nearby && nearby.getData('kind') === 'workbench') {
-                const firstAffordable = RECIPES.find(r =>
-                    Object.entries(r.ingredients).every(
+                const firstAffordable = RECIPES.find(recipe =>
+                    (!recipe.workbenchRequired || this.workbenchDiscovered) &&
+                    Object.entries(recipe.ingredients).every(
                         ([key, amount]) => this.hasItem(key, amount)
                     )
                 );
+
                 if (firstAffordable) {
                     this.craftRecipe(firstAffordable);
                 } else {
@@ -1931,7 +2056,7 @@ led to this moment.`, {
                 this.interactionPrompt.setText(`E — Craft items: ${name}`);
             } else if (kind === 'boatSite') {
                 if (this.boatBuilt) {
-                    this.interactionPrompt.setText(`${name} — Boat complete!`);
+                    this.interactionPrompt.setText('E — Sail away');
                 } else {
                     const stage = BOAT_STAGES[this.boatStage];
                     this.interactionPrompt.setText(`E — Build ${stage.name}: ${name}`);
@@ -1940,19 +2065,11 @@ led to this moment.`, {
                 const alreadyUsed = kind === 'house'
                     ? this.nearbyObject.getData('searched')
                     : this.nearbyObject.getData('harvested');
-
-                let action = kind === 'house' ? 'Search' : 'Gather wood';
-
-                if (alreadyUsed) {
-                    action = kind === 'house'
-                        ? 'Already searched'
-                        : 'Already harvested';
-                }
-
+                const action = kind === 'house'
+                    ? (alreadyUsed ? 'Already searched' : 'Search')
+                    : (alreadyUsed ? 'Already harvested' : 'Gather wood');
                 this.interactionPrompt.setText(
-                    alreadyUsed
-                        ? `${name} — ${action}`
-                        : `E — ${action}: ${name}`
+                    alreadyUsed ? `${name} — ${action}` : `E — ${action}: ${name}`
                 );
             }
 
@@ -1961,43 +2078,20 @@ led to this moment.`, {
             this.interactionPrompt.setVisible(false);
         }
 
-        const interactionDown = this.keys.E.isDown;
-
-        if (
-            !this.craftingOpen &&
-            interactionDown &&
-            !this.interactionWasDown &&
-            this.nearbyObject &&
-            this.nearbyObject.getData('kind') !== 'boatSite'
-        ) {
-            this.interactWith(this.nearbyObject);
+        if (!this.craftingOpen && interactionPressed && this.nearbyObject) {
+            const kind = this.nearbyObject.getData('kind');
+            if (kind === 'boatSite') {
+                // A newly completed boat requires a second, deliberate press to depart.
+                if (this.boatBuilt) {
+                    this.checkWinCondition(true);
+                } else {
+                    this.buildBoatStage();
+                }
+            } else {
+                this.interactWith(this.nearbyObject);
+            }
         }
 
-        // Build boat stage when E is pressed at the dock.
-        if (
-            !this.craftingOpen &&
-            interactionDown &&
-            !this.interactionWasDown &&
-            this.nearbyObject?.getData('kind') === 'boatSite' &&
-            !this.boatBuilt
-        ) {
-            this.buildBoatStage();
-        }
-
-        // DO016: Trigger cinematic ending when boat is built and player presses E at boat site
-        if (
-            !this.craftingOpen &&
-            interactionDown &&
-            !this.interactionWasDown &&
-            this.nearbyObject?.getData('kind') === 'boatSite' &&
-            this.boatBuilt
-        ) {
-            this.showEnding();
-        }
-
-        this.checkWinCondition();
-
-        // DO018: Cycle contextual hints
         if (!this.endingActive && !this.won) {
             const hints = this.getContextualHints();
             if (hints.length > 0) {
@@ -2016,87 +2110,7 @@ led to this moment.`, {
         }
 
         this.interactionWasDown = interactionDown;
-
-        // DO022: Handle indoor mode movement and interaction
-        if (this.indoorMode) {
-            const GRID_W = 5;
-            const GRID_H = 4;
-            const INDOOR_TILE = 32;
-            const SPEED = 120;
-
-            let idx = 0, idy = 0;
-            if (this.keys.left.isDown || this.keys.A.isDown) idx -= 1;
-            if (this.keys.right.isDown || this.keys.D.isDown) idx += 1;
-            if (this.keys.up.isDown || this.keys.W.isDown) idy -= 1;
-            if (this.keys.down.isDown || this.keys.S.isDown) idy += 1;
-
-            if (idx !== 0 && idy !== 0) {
-                const len = Math.sqrt(idx * idx + idy * idy);
-                idx /= len;
-                idy /= len;
-            }
-
-            const newX = this.indoorPlayer.x + idx * SPEED * 0.016;
-            const newY = this.indoorPlayer.y + idy * SPEED * 0.016;
-
-            // Clamp to indoor bounds
-            const clampedX = Math.max(INDOOR_TILE / 2, Math.min(newX, (GRID_W - 0.5) * INDOOR_TILE));
-            const clampedY = Math.max(INDOOR_TILE / 2, Math.min(newY, (GRID_H - 0.5) * INDOOR_TILE));
-
-            this.indoorPlayer.x = clampedX;
-            this.indoorPlayer.y = clampedY;
-
-            if (this.indoorPlayerSprite) {
-                this.indorPlayerSprite.setPosition(clampedX, clampedY);
-            }
-
-            // Check proximity to workbench
-            const wbTile = (MAP_OBSTACLES[this.currentMapId]?.indoorHouses || [{}])[0]?.workbenchTile || { i: 3, j: 2 };
-            const wbX = wbTile.i * INDOOR_TILE + INDOOR_TILE / 2;
-            const wbY = wbTile.j * INDOOR_TILE + INDOOR_TILE / 2;
-            const distToWB = Math.hypot(clampedX - wbX, clampedY - wbY);
-
-            if (this.indorPrompt) {
-                if (distToWB < INDOOR_TILE * 1.5 && !this.workbenchDiscovered) {
-                    this.indorPrompt.setText('E — Discover workbench');
-                    this.indorPrompt.setVisible(true);
-                } else if (this.workbenchDiscovered) {
-                    this.indorPrompt.setText('You found the workbench! Press ESC to exit.');
-                    this.indorPrompt.setVisible(true);
-                } else {
-                    this.indorPrompt.setVisible(false);
-                }
-            }
-
-            // Interact with workbench inside
-            if (this.keys.E.isDown && !this.interactionWasDown && distToWB < INDOOR_TILE * 1.5) {
-                if (!this.workbenchDiscovered) {
-                    this.workbenchDiscovered = true;
-                    GameState.workbenchDiscovered = true;
-                    this.showMessage('You discovered a workbench inside! Crafting is now available.');
-                }
-            }
-
-            // Exit via door (ESC or E near door)
-            if (this.keys.E.isDown && !this.interactionWasDown) {
-                const doorX = 2 * INDOOR_TILE + INDOOR_TILE / 2;
-                const doorY = (GRID_H - 1) * INDOOR_TILE + INDOOR_TILE / 2 + 20;
-                const distToDoor = Math.hypot(clampedX - doorX, clampedY - doorY);
-                if (distToDoor < INDOOR_TILE) {
-                    this.exitIndoor();
-                }
-            }
-
-            if (this.keys.ESC.isDown && !this.escapeWasDown) {
-                this.exitIndoor();
-            }
-
-            this.interactionWasDown = this.keys.E.isDown;
-            this.escapeWasDown = this.keys.ESC.isDown;
-
-            // Skip outdoor movement when indoors
-            return;
-        }
+        this.escapeWasDown = escapeDown;
 
         let dx = 0;
         let dy = 0;
@@ -2107,28 +2121,16 @@ led to this moment.`, {
         if (this.cursors.down.isDown || this.keys.S.isDown) dy += 1;
 
         if (dx !== 0 && dy !== 0) {
-            const length = Math.sqrt(dx * dx + dy * dy);
+            const length = Math.hypot(dx, dy);
             dx /= length;
             dy /= length;
         }
 
-        // Avoid snapping the player backward at the island edge.
-        const inside = this.isInsideIsland(
-            this.player.x,
-            this.player.y
-        );
-
+        const inside = this.isInsideIsland(this.player.x, this.player.y);
         if (!inside) {
             const centerX = 960;
             const centerY = 40 + ((this.rows - 1) * TILE_H) / 2;
-
-            const towardCenterX = centerX - this.player.x;
-            const towardCenterY = centerY - this.player.y;
-
-            const dot =
-                dx * towardCenterX +
-                dy * towardCenterY;
-
+            const dot = dx * (centerX - this.player.x) + dy * (centerY - this.player.y);
             if (dot < 0) {
                 dx = 0;
                 dy = 0;
@@ -2136,16 +2138,9 @@ led to this moment.`, {
         }
 
         body.setAcceleration(dx * 900, dy * 900);
+        if (dx === 0) body.setAccelerationX(0);
+        if (dy === 0) body.setAccelerationY(0);
 
-        if (dx === 0) {
-            body.setAccelerationX(0);
-        }
-
-        if (dy === 0) {
-            body.setAccelerationY(0);
-        }
-
-        // Check for map transitions at path exits
         this.checkMapTransition();
     }
 }
