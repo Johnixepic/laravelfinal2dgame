@@ -1237,13 +1237,13 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         // Inventory is a dedicated viewport-fixed panel, above the workbench layer.
-        this.inventoryPanel = this.add.rectangle(this.scale.width - 260, 380, 480, 640, 0x0b1710, 0.98)
+        this.inventoryPanel = this.add.rectangle(this.scale.width - 330, 410, 480, 640, 0x0b1710, 0.98)
             .setScrollFactor(0)
             .setDepth(5000)
             .setVisible(false);
 
         this.inventoryText = this.add.text(
-            this.scale.width - 480, 75, '',
+            this.scale.width - 550, 105, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '14px',
@@ -2127,7 +2127,7 @@ class WorldScene extends Phaser.Scene {
         this.tweens.killTweensOf(this.messageText);
         if (this.messageHideEvent) this.messageHideEvent.remove(false);
 
-        this.messageHideEvent = this.time.delayedCall(3000, () => {
+        this.messageHideEvent = this.time.delayedCall(4500, () => {
             this.tweens.add({
                 targets: this.messageText,
                 alpha: 0,
@@ -2178,6 +2178,11 @@ class WorldScene extends Phaser.Scene {
         const name = object.getData('name') || 'Object';
 
         if (kind === 'house') {
+            if (object.getData('searched')) {
+                this.showMessage(`${name} has already been searched.`, 'warning');
+                return;
+            }
+
             // DO022: Check for indoor house (workbench discovery on MAP2)
             const mapObstacles = MAP_OBSTACLES[this.currentMapId] || {};
             const buildingDef = mapObstacles.buildings?.find(b => b.name === name);
@@ -2185,11 +2190,6 @@ class WorldScene extends Phaser.Scene {
             if (buildingDef?.indoor && !this.workbenchDiscovered) {
                 // Enter indoor mode to discover workbench
                 this.enterIndoorMode(name, buildingDef);
-                return;
-            }
-
-            if (object.getData('searched')) {
-                this.showMessage(`${name} has already been searched.`);
                 return;
             }
 
@@ -2252,13 +2252,13 @@ class WorldScene extends Phaser.Scene {
         }
 
         if (kind === 'tree') {
-            if (!this.equipment.saw) {
-                this.showMessage('You need a Saw to cut down trees.', 'warning');
+            if (object.getData('harvested')) {
+                this.showMessage('This tree has already been harvested.', 'warning');
                 return;
             }
 
-            if (object.getData('harvested')) {
-                this.showMessage('This tree has already been harvested.');
+            if (!this.equipment.saw) {
+                this.showMessage('You need a Saw to cut down trees.', 'warning');
                 return;
             }
 
@@ -2748,10 +2748,10 @@ THE END`, {
         const h = this.scale.height;
 
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 260, 380);
+            this.inventoryPanel.setPosition(w - 330, 410);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 480, 75);
+            this.inventoryText.setPosition(w - 550, 105);
             this.inventoryText.setWordWrapWidth(420, true);
         }
 
