@@ -94,7 +94,7 @@ assert.match(source, /this\.inventoryPanel\.setPosition\(w - 140, 230\)/);
 assert.match(source, /this\.inventoryText\.setPosition\(w - 260, 38\)/);
 assert.match(source, /this\.messageText\.setPosition\(w \/ 2, h - 54\)/);
 assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
-assert.match(source, /this\.mapLabel = null;\/\/ Scene restarts reuse WorldScene; discard stale UI GameObject references\./);
+assert.match(source, /this\.mapLabel = null;/);
 assert.match(source, /this\.mapLabel && this\.mapLabel\.scene === this && this\.mapLabel\.active/);
 
 
