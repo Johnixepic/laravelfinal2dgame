@@ -156,5 +156,18 @@ assert.match(source, /GameState\.workbenchDiscovered = true/);
 assert.match(source, /GameState\.started = false/);
 assert.match(source, /this\.openMenu\('ending'\)/);
 
+
+ // TLC-026: safe survival loop, food action, day/night state and optional sound effects.
+assert.match(source, /updateSurvival\(delta = 16\)/);
+assert.match(source, /this\.survival\.hunger = Math\.max\(0, this\.survival\.hunger - 1\)/);
+assert.match(source, /eatFood\(\) \{/);
+assert.match(source, /this\.removeItem\('food', 1\)/);
+assert.match(source, /this\.survival\.hunger <= 15 \? 0\.75 : 1/);
+assert.match(source, /NIGHT \(SAFE\)/);
+assert.match(source, /playSfx\(kind = 'interact'\)/);
+assert.match(source, /SOUND: /);
+assert.match(source, /this\.playSfx\('victory'\)/);
+assert.match(source, /GameState\.survival = \{ \.\.\.this\.survival \}/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
