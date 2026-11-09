@@ -2146,6 +2146,8 @@ class WorldScene extends Phaser.Scene {
 
         // Animate the completed boat leaving shore before the ending card appears.
         if (this.boatSite) {
+            this.cameras.main.stopFollow();
+            this.cameras.main.startFollow(this.boatSite, true, 0.05, 0.05);
             this.tweens.add({
                 targets: this.boatSite,
                 x: this.boatSite.x + 620,
@@ -2206,7 +2208,6 @@ THE END`, {
         this.tweens.add({
             targets: bg,
             alpha: 1,
-            duration: 1500,
             delay: 2200,
             duration: 1800,
             ease: 'Power2',
