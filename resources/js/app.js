@@ -1528,7 +1528,19 @@ class WorldScene extends Phaser.Scene {
             object.setData('searched', true);
 
             const table = LOOT_TABLES[name] || LOOT_TABLES['Abandoned House'];
-            const loot = Phaser.Math.RND.pick(table);
+            const loot = { ...Phaser.Math.RND.pick(table) };
+
+            // Guaranteed minimum supplies prevent unlucky loot rolls from softlocking
+            // the tool and boat progression. Searching every region remains important.
+            const regionalMinimums = {
+                MAP2: { wood: 1, scrap: 1, rope: 1, cloth: 1 },
+                MAP3: { scrap: 2, rope: 1, cloth: 1 },
+                MAP4: { scrap: 1, rope: 1, cloth: 1 },
+                MAP5: { rope: 1, cloth: 2 },
+            };
+            for (const [item, minimum] of Object.entries(regionalMinimums[this.currentMapId] || {})) {
+                loot[item] = Math.max(loot[item] || 0, minimum);
+            }
 
             for (const [item, amount] of Object.entries(loot)) {
                 this.addItem(item, amount);
