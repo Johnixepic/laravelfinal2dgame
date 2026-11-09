@@ -129,7 +129,7 @@
             <div id="game-container"></div>
             <div class="game-footer">
                 <span>WASD / Arrow keys — Move</span>
-                <span>E — Interact  ·  I — Inventory  ·  ESC — Pause / close panels</span>
+                <span>E — Interact  ·  I — Inventory  ·  F — Eat food  ·  ESC — Pause / close panels</span>
                 <span>5-map journey: Home Island → Abandoned Settlement → Industrial Ruins → Deep Wilderness → Coastal Escape (build boat here)</span>
             </div>
         </section>
