@@ -2260,7 +2260,7 @@ THE END`, {
         this.endingOverlay = overlay;
 
         // Listen for restart
-        this.input.keyboard.on('keydown-R', () => {
+        this.input.keyboard.once('keydown-R', () => {
             this.restartGame();
         });
     }
