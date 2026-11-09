@@ -1714,7 +1714,7 @@ class WorldScene extends Phaser.Scene {
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
 
-    saveGame() {
+    saveGame({ silent = false } = {}) {
         const playerTile = this.playerTile();
         const objectStates = this.captureCurrentMapObjectStates();
         GameState.objectStates[this.currentMapId] = objectStates;
@@ -1741,12 +1741,15 @@ class WorldScene extends Phaser.Scene {
             GameState.boatStagesCompleted = save.boatStagesCompleted;
             GameState.boatBuilt = save.boatBuilt;
             GameState.workbenchDiscovered = save.workbenchDiscovered;
-            GameState.survival = save.survival || { elapsedMs: 0, hunger: 100, hungerTickMs: 0 };
-            this.showMessage('Game saved in this browser.', 'success');
-            this.closeMenu();
+            GameState.survival = save.survival;
+            this.lastAutosaveAt = this.time?.now ?? 0;
+            if (!silent) {
+                this.showMessage('Game saved in this browser.', 'success');
+                this.closeMenu();
+            }
             return true;
         } catch (error) {
-            this.showMessage('Could not save. Browser storage may be unavailable or full.', 'error');
+            if (!silent) this.showMessage('Could not save. Browser storage may be unavailable or full.', 'error');
             return false;
         }
     }
@@ -2602,6 +2605,8 @@ THE END`, {
         GameState.workbenchDiscovered = this.workbenchDiscovered || false;
         GameState.survival = { ...this.survival };
         GameState.objectStates[this.currentMapId] = this.captureCurrentMapObjectStates();
+        // Every successful map exit is a durable checkpoint, even before a manual save.
+        this.saveGame({ silent: true });
 
         // Persist the just-captured map state and shared progression before leaving.
         // A storage failure must not block movement to the next map.
@@ -2777,6 +2782,12 @@ THE END`, {
         const escapePressed = escapeDown && !this.escapeWasDown;
         if (eatPressed) this.eatFood();
         this.updateSurvival(delta);
+
+        // Quiet checkpoint every minute; never interrupt indoor exploration or menus.
+        if (!this.indoorMode && !this.endingActive && GameState.started &&
+            this.time.now - (this.lastAutosaveAt ?? this.time.now) >= 60000) {
+            this.saveGame({ silent: true });
+        }
 
         // Indoor movement is isolated from the outdoor player, objects and map exits.
         if (this.indoorMode) {
