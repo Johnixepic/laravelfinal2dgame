@@ -13,6 +13,7 @@ const GameState = {
     boatStagesCompleted: [false, false, false, false],
     boatBuilt: false,
     workbenchDiscovered: false,
+    started: false,
 };
 
 // ============================================================
@@ -499,6 +500,7 @@ class WorldScene extends Phaser.Scene {
         this.drawMap();
         this.createTextures();
         this.createObstacles(startMapId);
+        if (data?.objectStates) this.applySavedObjectStates(data.objectStates);
         this.createPlayer(startTile || mapDef.landmarks[0]?.tile || { i: 13, j: 13 });
         this.createControls();
         this.createInteractionSystem();
@@ -1192,6 +1194,8 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         this.refreshBoatUI();
+        this.createTouchControls();
+        this.createGameMenu();
 
         const camW = this.cameras.main.width;
         const camH = this.cameras.main.height;
@@ -1356,6 +1360,232 @@ class WorldScene extends Phaser.Scene {
         this.refreshInventoryUI();
     }
 
+    // ------------------------------------------------------------
+    // GAME FLOW: title menu, pause menu, local save/load and replay
+    // ------------------------------------------------------------
+    createGameMenu() {
+        this.menuOpen = false;
+        this.menuMode = null;
+        this.menuOverlay = null;
+        if (!GameState.started) this.openMenu('title');
+    }
+
+    openMenu(mode = 'pause') {
+        if (this.menuOverlay) this.menuOverlay.destroy();
+        this.menuMode = mode;
+        this.menuOpen = true;
+        this.player?.setVelocity(0, 0);
+        if (this.player?.body) this.player.body.enable = false;
+
+        const w = this.scale.width;
+        const h = this.scale.height;
+        const overlay = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(20000);
+        const shade = this.add.rectangle(0, 0, w, h, 0x07100d, 0.88);
+        overlay.add(shade);
+
+        const titleText = mode === 'title' ? 'THE LAST CONNECTION'
+            : mode === 'ending' ? 'JOURNEY COMPLETE'
+            : 'PAUSED';
+        const title = this.add.text(0, -245, titleText, {
+            fontFamily: 'sans-serif', fontSize: '38px', fontStyle: 'bold',
+            color: '#e2f0d8', align: 'center',
+        }).setOrigin(0.5);
+        overlay.add(title);
+
+        const subtitle = this.add.text(0, -185,
+            mode === 'title' ? 'A survival story begins at home.'
+                : mode === 'ending' ? 'You built a way out. Your story continues beyond the island.'
+                : 'Your progress is safe while the game is paused.',
+            { fontFamily: 'sans-serif', fontSize: '16px', color: '#a8c0a0', align: 'center' }
+        ).setOrigin(0.5);
+        overlay.add(subtitle);
+
+        const buttons = mode === 'title'
+            ? [
+                ['NEW GAME', () => this.startNewGame()],
+                ['CONTINUE / LOAD SAVE', () => this.loadSavedGame()],
+                ['EXIT TO BROWSER', () => this.showMessage('You can close this browser tab to exit the game.')],
+            ]
+            : mode === 'ending'
+                ? [
+                    ['PLAY AGAIN', () => this.startNewGame()],
+                    ['MAIN MENU', () => this.returnToTitle()],
+                ]
+                : [
+                    ['RESUME', () => this.closeMenu()],
+                    ['SAVE GAME', () => this.saveGame()],
+                    ['LOAD SAVED GAME', () => this.loadSavedGame()],
+                    ['MAIN MENU', () => this.returnToTitle()],
+                ];
+
+        buttons.forEach(([label, action], index) => {
+            const y = -95 + index * 76;
+            const button = this.add.rectangle(0, y, 420, 54, 0x203a29, 1)
+                .setStrokeStyle(2, 0x8eaa7d, 1)
+                .setInteractive({ useHandCursor: true });
+            const text = this.add.text(0, y, label, {
+                fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
+                color: '#edf5e8', align: 'center',
+            }).setOrigin(0.5);
+            button.on('pointerover', () => button.setFillStyle(0x34553a));
+            button.on('pointerout', () => button.setFillStyle(0x203a29));
+            button.on('pointerdown', action);
+            overlay.add([button, text]);
+        });
+
+        const saveExists = Boolean(localStorage.getItem('tlc-save-v1'));
+        if (mode === 'title' && !saveExists) {
+            const note = this.add.text(0, 165, 'No saved game found. Start a new journey.', {
+                fontFamily: 'sans-serif', fontSize: '13px', color: '#8c9d87',
+            }).setOrigin(0.5);
+            overlay.add(note);
+        }
+        const footer = this.add.text(0, 245, 'WASD / Arrows to move  ·  E interact  ·  I inventory  ·  ESC pause', {
+            fontFamily: 'sans-serif', fontSize: '12px', color: '#71866f',
+        }).setOrigin(0.5);
+        overlay.add(footer);
+        this.menuOverlay = overlay;
+    }
+
+    closeMenu() {
+        if (!this.menuOpen) return;
+        this.menuOverlay?.destroy();
+        this.menuOverlay = null;
+        this.menuOpen = false;
+        this.menuMode = null;
+        if (this.player?.body) this.player.body.enable = true;
+    }
+
+    startNewGame() {
+        GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
+        GameState.equipment = { saw: false, hammer: false, crowbar: false, screwdriver: false };
+        GameState.boatStage = 0;
+        GameState.boatStagesCompleted = [false, false, false, false];
+        GameState.boatBuilt = false;
+        GameState.workbenchDiscovered = false;
+        GameState.started = true;
+        localStorage.removeItem('tlc-save-v1');
+        this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
+    }
+
+    saveGame() {
+        const playerTile = this.playerTile();
+        const objectStates = this.obstacles.getChildren().map(object => ({
+            name: object.getData('name'),
+            kind: object.getData('kind'),
+            searched: Boolean(object.getData('searched')),
+            harvested: Boolean(object.getData('harvested')),
+        }));
+        const save = {
+            version: 1,
+            savedAt: new Date().toISOString(),
+            mapId: this.currentMapId,
+            playerTile,
+            inventory: { ...this.inventory },
+            equipment: { ...this.equipment },
+            boatStage: this.boatStage,
+            boatStagesCompleted: [...this.boatStagesCompleted],
+            boatBuilt: this.boatBuilt,
+            workbenchDiscovered: this.workbenchDiscovered,
+            objectStates,
+        };
+        try {
+            localStorage.setItem('tlc-save-v1', JSON.stringify(save));
+            GameState.inventory = save.inventory;
+            GameState.equipment = save.equipment;
+            GameState.boatStage = save.boatStage;
+            GameState.boatStagesCompleted = save.boatStagesCompleted;
+            GameState.boatBuilt = save.boatBuilt;
+            GameState.workbenchDiscovered = save.workbenchDiscovered;
+            this.showMessage('Game saved in this browser.', 'success');
+            this.closeMenu();
+            return true;
+        } catch (error) {
+            this.showMessage('Could not save. Browser storage may be unavailable or full.', 'error');
+            return false;
+        }
+    }
+
+    loadSavedGame() {
+        let save;
+        try {
+            save = JSON.parse(localStorage.getItem('tlc-save-v1') || 'null');
+        } catch (error) {
+            save = null;
+        }
+        if (!save || save.version !== 1 || !MAPS[save.mapId] || !save.playerTile) {
+            this.showMessage('No valid saved game was found.', 'warning');
+            return false;
+        }
+
+        GameState.inventory = { ...save.inventory };
+        GameState.equipment = { ...save.equipment };
+        GameState.boatStage = save.boatStage || 0;
+        GameState.boatStagesCompleted = [...(save.boatStagesCompleted || [false, false, false, false])];
+        GameState.boatBuilt = Boolean(save.boatBuilt);
+        GameState.workbenchDiscovered = Boolean(save.workbenchDiscovered);
+        GameState.started = true;
+        this.scene.start('WorldScene', {
+            startMapId: save.mapId,
+            startTile: save.playerTile,
+            objectStates: save.objectStates || [],
+        });
+        return true;
+    }
+
+    returnToTitle() {
+        GameState.started = false;
+        this.scene.restart({ showTitle: true });
+    }
+
+    applySavedObjectStates(states = []) {
+        const lookup = new Map(states.map(state => [`${state.kind}:${state.name}`, state]));
+        for (const object of this.obstacles.getChildren()) {
+            const state = lookup.get(`${object.getData('kind')}:${object.getData('name')}`);
+            if (!state) continue;
+            if (state.searched) object.setData('searched', true);
+            if (state.harvested) object.setData('harvested', true);
+        }
+    }
+
+    createTouchControls() {
+        this.touchKeys = { up: false, down: false, left: false, right: false };
+        const root = this.add.container(150, this.scale.height - 170).setScrollFactor(0).setDepth(6000);
+        const makeButton = (x, y, label, onDown, onUp) => {
+            const button = this.add.circle(x, y, 31, 0x10231b, 0.82)
+                .setStrokeStyle(2, 0x91aa80, 0.9)
+                .setInteractive();
+            const text = this.add.text(x, y, label, {
+                fontFamily: 'sans-serif', fontSize: '19px', fontStyle: 'bold', color: '#edf5e8',
+            }).setOrigin(0.5);
+            button.on('pointerdown', onDown);
+            button.on('pointerup', onUp);
+            button.on('pointerout', onUp);
+            root.add([button, text]);
+        };
+        makeButton(0, -62, '↑', () => this.touchKeys.up = true, () => this.touchKeys.up = false);
+        makeButton(0, 62, '↓', () => this.touchKeys.down = true, () => this.touchKeys.down = false);
+        makeButton(-62, 0, '←', () => this.touchKeys.left = true, () => this.touchKeys.left = false);
+        makeButton(62, 0, '→', () => this.touchKeys.right = true, () => this.touchKeys.right = false);
+        const actionRoot = this.add.container(this.scale.width - 150, this.scale.height - 155)
+            .setScrollFactor(0).setDepth(6000);
+        const interact = this.add.circle(0, 0, 36, 0x315b39, 0.9).setStrokeStyle(2, 0xc5d9b6).setInteractive();
+        const interactLabel = this.add.text(0, 0, 'E', { fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        interact.on('pointerdown', () => this.touchInteract = true);
+        interact.on('pointerup', () => this.touchInteract = false);
+        interact.on('pointerout', () => this.touchInteract = false);
+        const inventory = this.add.circle(0, 86, 30, 0x263d4c, 0.9).setStrokeStyle(2, 0xb4c8d2).setInteractive();
+        const inventoryLabel = this.add.text(0, 86, 'I', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        inventory.on('pointerdown', () => this.touchInventory = true);
+        inventory.on('pointerup', () => this.touchInventory = false);
+        inventory.on('pointerout', () => this.touchInventory = false);
+        actionRoot.add([interact, interactLabel, inventory, inventoryLabel]);
+        root.setVisible(Boolean(this.sys.game.device.input.touch));
+        actionRoot.setVisible(Boolean(this.sys.game.device.input.touch));
+        this.touchControlsRoot = root;
+        this.touchActionRoot = actionRoot;
+    }
+
     addItem(key, amount) {
         const def = ITEM_DEFS[key];
         if (!def || !Number.isInteger(amount) || amount <= 0) return 0;
@@ -1492,7 +1722,7 @@ class WorldScene extends Phaser.Scene {
             if (cardBorder) {
                 cardBorder.clear();
                 cardBorder.lineStyle(1, canCraft ? 0x9bb58b : 0x59634f, 1);
-                cardBorder.strokeRect(-186, -25, 372, 50);
+                cardBorder.strokeRect(-290, -30, 580, 60);
             }
         }
     }
@@ -1624,6 +1854,12 @@ class WorldScene extends Phaser.Scene {
 
             const table = LOOT_TABLES[name] || LOOT_TABLES['Abandoned House'];
             const loot = { ...Phaser.Math.RND.pick(table) };
+            if (name === 'Your Home') {
+                loot.wood = Math.max(loot.wood || 0, 3);
+                loot.scrap = Math.max(loot.scrap || 0, 2);
+                loot.rope = Math.max(loot.rope || 0, 1);
+                loot.cloth = Math.max(loot.cloth || 0, 1);
+            }
 
             // Guaranteed minimum supplies prevent unlucky loot rolls from softlocking
             // the tool and boat progression. Searching every region remains important.
@@ -1882,6 +2118,8 @@ led to this moment.`, {
         GameState.boatStagesCompleted = [false, false, false, false];
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
+        GameState.started = true;
+        localStorage.removeItem('tlc-save-v1');
 
         // Destroy ending overlay
         if (this.endingOverlay) {
@@ -2166,9 +2404,10 @@ led to this moment.`, {
         const body = this.player?.body;
         if (!body) return;
 
-        const interactionDown = this.keys.E.isDown;
+        const interactionDown = this.keys.E.isDown || Boolean(this.touchInteract);
         const escapeDown = this.keys.ESC.isDown;
-        const inventoryDown = this.keys.I.isDown;
+        if (this.menuOpen) return;
+        const inventoryDown = this.keys.I.isDown || Boolean(this.touchInventory);
         const inventoryPressed = inventoryDown && !this.inventoryWasDown;
 
         if (inventoryPressed) {
@@ -2271,6 +2510,13 @@ led to this moment.`, {
             this.inventoryPanel.setVisible(false);
             this.inventoryText.setVisible(false);
         }
+        if (escapePressed && !this.craftingOpen && !this.inventoryOpen) {
+            this.openMenu('pause');
+            this.interactionWasDown = interactionDown;
+            this.escapeWasDown = escapeDown;
+            this.inventoryWasDown = inventoryDown;
+            return;
+        }
 
         if (this.craftingOpen && interactionPressed) {
             const nearby = this.findNearbyObject();
@@ -2360,10 +2606,10 @@ led to this moment.`, {
         let dx = 0;
         let dy = 0;
 
-        if (this.cursors.left.isDown || this.keys.A.isDown) dx -= 1;
-        if (this.cursors.right.isDown || this.keys.D.isDown) dx += 1;
-        if (this.cursors.up.isDown || this.keys.W.isDown) dy -= 1;
-        if (this.cursors.down.isDown || this.keys.S.isDown) dy += 1;
+        if (this.cursors.left.isDown || this.keys.A.isDown || this.touchKeys?.left) dx -= 1;
+        if (this.cursors.right.isDown || this.keys.D.isDown || this.touchKeys?.right) dx += 1;
+        if (this.cursors.up.isDown || this.keys.W.isDown || this.touchKeys?.up) dy -= 1;
+        if (this.cursors.down.isDown || this.keys.S.isDown || this.touchKeys?.down) dy += 1;
 
         if (dx !== 0 && dy !== 0) {
             const length = Math.hypot(dx, dy);
