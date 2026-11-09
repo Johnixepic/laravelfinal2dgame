@@ -1109,27 +1109,29 @@ class WorldScene extends Phaser.Scene {
             .setDepth(2000)
             .setVisible(false);
 
-        this.inventoryPanel = this.add.rectangle(this.scale.width - 140, 230, 260, 420, 0x0f1c12, 0.96)
+        // Inventory is a dedicated viewport-fixed panel, above the workbench layer.
+        this.inventoryPanel = this.add.rectangle(this.scale.width - 210, 250, 380, 460, 0x0b1710, 0.98)
             .setScrollFactor(0)
-            .setDepth(999)
+            .setDepth(5000)
             .setVisible(false);
 
         this.inventoryText = this.add.text(
-            this.scale.width - 260, 38, '',
+            this.scale.width - 380, 42, '',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '13px',
-                color: '#ffffff',
-                backgroundColor: '#0f1c12ff',
-                padding: { x: 12, y: 9 },
-                lineSpacing: 5,
+                fontSize: '16px',
+                color: '#e5f0df',
+                padding: { x: 8, y: 8 },
+                lineSpacing: 8,
                 align: 'left',
-                wordWrap: { width: 220 },
+                wordWrap: { width: 330 },
             }
         )
             .setScrollFactor(0)
-            .setDepth(1000)
+            .setDepth(5001)
             .setVisible(false);
+
+        this.refreshInventoryUI();
 
         // High-priority toast layer: keep gameplay feedback away from the bottom
         // prompts and above inventory/workbench panels.
@@ -2121,10 +2123,11 @@ led to this moment.`, {
         const h = this.scale.height;
 
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 140, 230);
+            this.inventoryPanel.setPosition(w - 210, 250);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 260, 38);
+            this.inventoryText.setPosition(w - 380, 42);
+            this.inventoryText.setWordWrapWidth(330, true);
         }
 
         if (this.boatPanel) {
@@ -2170,6 +2173,7 @@ led to this moment.`, {
 
         if (inventoryPressed) {
             this.inventoryOpen = !this.inventoryOpen;
+            if (this.inventoryOpen) this.refreshInventoryUI();
             this.inventoryPanel.setVisible(this.inventoryOpen);
             this.inventoryText.setVisible(this.inventoryOpen);
         }
@@ -2261,6 +2265,11 @@ led to this moment.`, {
         if (escapePressed && this.craftingOpen) {
             this.craftingOpen = false;
             this.craftingPanel.setVisible(false);
+        }
+        if (escapePressed && this.inventoryOpen) {
+            this.inventoryOpen = false;
+            this.inventoryPanel.setVisible(false);
+            this.inventoryText.setVisible(false);
         }
 
         if (this.craftingOpen && interactionPressed) {
