@@ -1396,15 +1396,21 @@ class WorldScene extends Phaser.Scene {
 
         const subtitle = this.add.text(0, -185,
             mode === 'title' ? 'A survival story begins at home.'
+                : mode === 'confirm-new' ? 'Starting over replaces the current browser save.'
                 : mode === 'ending' ? 'You built a way out. Your story continues beyond the island.'
                 : 'Your progress is safe while the game is paused.',
             { fontFamily: 'sans-serif', fontSize: '16px', color: '#a8c0a0', align: 'center' }
         ).setOrigin(0.5);
         overlay.add(subtitle);
 
-        const buttons = mode === 'title'
+        const buttons = mode === 'confirm-new'
             ? [
-                ['NEW GAME', () => this.startNewGame()],
+                ['START A FRESH GAME', () => this.startNewGame()],
+                ['CANCEL', () => this.openMenu('title')],
+            ]
+            : mode === 'title'
+            ? [
+                ['NEW GAME', () => this.confirmNewGame()],
                 ['CONTINUE / LOAD SAVE', () => this.loadSavedGame()],
                 ['EXIT TO BROWSER', () => this.showMenuNotice('To exit, close this browser tab. Browsers do not let games close their own tab.')],
             ]
@@ -1448,6 +1454,13 @@ class WorldScene extends Phaser.Scene {
         }).setOrigin(0.5);
         overlay.add(footer);
         this.menuOverlay = overlay;
+    }
+
+    confirmNewGame() {
+        let hasSave = false;
+        try { hasSave = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { hasSave = false; }
+        if (hasSave) this.openMenu('confirm-new');
+        else this.startNewGame();
     }
 
     showMenuNotice(message) {
