@@ -199,5 +199,14 @@ assert.match(source, /const amount = itemKey === 'machinery_salvage' \? 1 : 2/);
 assert.match(source, /object\.setAlpha\(0\.35\)/);
 assert.match(source, /const blocked = this\.obstacles\.getChildren\(\)\.some/);
 
+// TLC-028: every map profile now creates collectible salvage and every salvage family can be processed.
+assert.match(source, /const resourceTiles = \[\[14, 6\]/);
+assert.match(source, /cache\.setData\('kind', 'gatherable'\)/);
+assert.match(source, /cache\.setData\('itemKey', itemKey\)/);
+for (const recipeId of ['recycleBranches', 'processDriftwood', 'twistFibers', 'twistNaturalFibers', 'recycleHouseholdScrap', 'recycleMachinery', 'recycleFasteners']) {
+    assert.match(source, new RegExp("id: '" + recipeId + "'"), "Missing salvage processing recipe: " + recipeId);
+}
+assert.match(source, /this\.inventoryWasDown = false;[\s\S]*?this\.eatWasDown = false;/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
