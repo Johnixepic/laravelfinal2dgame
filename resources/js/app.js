@@ -15,6 +15,7 @@ const GameState = {
     workbenchDiscovered: false,
     started: false,
     objectStates: {},
+    survival: { elapsedMs: 0, hunger: 100, hungerTickMs: 0 },
 };
 
 // ============================================================
@@ -1061,6 +1062,7 @@ class WorldScene extends Phaser.Scene {
             E: Phaser.Input.Keyboard.KeyCodes.E,
             ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
             I: Phaser.Input.Keyboard.KeyCodes.I,
+            F: Phaser.Input.Keyboard.KeyCodes.F,
         });
 
         this.add.text(24, 0, 'WASD / ARROWS: MOVE  ·  I: INVENTORY', {
@@ -1196,6 +1198,14 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         this.refreshBoatUI();
+        this.survival = { ...GameState.survival };
+        this.nightOverlay = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x071326, 0.24)
+            .setScrollFactor(0).setDepth(500).setVisible(false);
+        this.survivalText = this.add.text(24, 98, '', {
+            fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+            color: '#e2f0d8', backgroundColor: '#0f1c12dd', padding: { x: 10, y: 7 },
+        }).setScrollFactor(0).setDepth(1200);
+        this.refreshSurvivalUI();
         this.createTouchControls();
         this.createGameMenu();
 
@@ -1363,6 +1373,78 @@ class WorldScene extends Phaser.Scene {
         this.refreshRecipeUI();
     }
 
+    updateSurvival(delta = 16) {
+        this.survival.elapsedMs += Math.max(0, delta);
+        this.survival.hungerTickMs += Math.max(0, delta);
+        while (this.survival.hungerTickMs >= 15000) {
+            this.survival.hungerTickMs -= 15000;
+            this.survival.hunger = Math.max(0, this.survival.hunger - 1);
+        }
+        GameState.survival = { ...this.survival };
+        this.refreshSurvivalUI();
+    }
+
+    refreshSurvivalUI() {
+        if (!this.survivalText || !this.survival) return;
+        const cycleLength = 180000;
+        const phase = this.survival.elapsedMs % cycleLength;
+        const isNight = phase >= 120000;
+        const day = Math.floor(this.survival.elapsedMs / cycleLength) + 1;
+        this.survival.day = day;
+        this.survival.isNight = isNight;
+        this.nightOverlay?.setVisible(isNight);
+        this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
+    }
+
+    eatFood() {
+        if (!this.hasItem('food', 1)) {
+            this.showMessage('You have no food. Search buildings for supplies.', 'warning');
+            return false;
+        }
+        if (this.survival.hunger >= 100) {
+            this.showMessage('You are not hungry right now.');
+            return false;
+        }
+        this.removeItem('food', 1);
+        this.survival.hunger = Math.min(100, this.survival.hunger + 35);
+        GameState.survival = { ...this.survival };
+        this.refreshSurvivalUI();
+        this.showMessage('You ate some food. Hunger restored.', 'success');
+        this.playSfx('eat');
+        return true;
+    }
+
+    playSfx(kind = 'interact') {
+        if (this.audioEnabled === false) return;
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            this.audioContext ||= new AudioContextClass();
+            if (this.audioContext.state === 'suspended') this.audioContext.resume();
+            const presets = {
+                pickup: [620, 880], craft: [420, 660, 880], eat: [260, 340],
+                transition: [440, 550, 660], victory: [523, 659, 784, 1046],
+            };
+            const notes = presets[kind] || [440];
+            const now = this.audioContext.currentTime;
+            notes.forEach((frequency, index) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, now + index * 0.09);
+                gain.gain.setValueAtTime(0.0001, now + index * 0.09);
+                gain.gain.exponentialRampToValueAtTime(0.055, now + index * 0.09 + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.09 + 0.12);
+                oscillator.connect(gain);
+                gain.connect(this.audioContext.destination);
+                oscillator.start(now + index * 0.09);
+                oscillator.stop(now + index * 0.09 + 0.13);
+            });
+        } catch (error) {
+            // Audio is optional; gameplay must never depend on it.
+        }
+    }
+
     // ------------------------------------------------------------
     // GAME FLOW: title menu, pause menu, local save/load and replay
     // ------------------------------------------------------------
@@ -1424,6 +1506,10 @@ class WorldScene extends Phaser.Scene {
                 : [
                     ['RESUME', () => this.closeMenu()],
                     ['SAVE GAME', () => this.saveGame()],
+                    [`SOUND: ${this.audioEnabled === false ? 'OFF' : 'ON'}`, () => {
+                        this.audioEnabled = this.audioEnabled === false;
+                        this.openMenu('pause');
+                    }],
                     ['LOAD SAVED GAME', () => this.loadSavedGame()],
                     ['MAIN MENU', () => this.returnToTitle()],
                 ];
@@ -1491,6 +1577,7 @@ class WorldScene extends Phaser.Scene {
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
         GameState.objectStates = {};
+        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0 };
         GameState.started = true;
         try { localStorage.removeItem('tlc-save-v1'); } catch (error) { /* Starting a new run must still work if storage is blocked. */ }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
@@ -1511,6 +1598,7 @@ class WorldScene extends Phaser.Scene {
             boatStagesCompleted: [...this.boatStagesCompleted],
             boatBuilt: this.boatBuilt,
             workbenchDiscovered: this.workbenchDiscovered,
+            survival: { ...this.survival },
             objectStates: { ...GameState.objectStates },
         };
         try {
@@ -1521,6 +1609,7 @@ class WorldScene extends Phaser.Scene {
             GameState.boatStagesCompleted = save.boatStagesCompleted;
             GameState.boatBuilt = save.boatBuilt;
             GameState.workbenchDiscovered = save.workbenchDiscovered;
+            GameState.survival = save.survival || { elapsedMs: 0, hunger: 100, hungerTickMs: 0 };
             this.showMessage('Game saved in this browser.', 'success');
             this.closeMenu();
             return true;
@@ -1612,10 +1701,15 @@ class WorldScene extends Phaser.Scene {
         interact.on('pointerout', () => this.touchInteract = false);
         const inventory = this.add.circle(0, 86, 30, 0x263d4c, 0.9).setStrokeStyle(2, 0xb4c8d2).setInteractive();
         const inventoryLabel = this.add.text(0, 86, 'I', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        const eat = this.add.circle(-72, 86, 30, 0x604b2d, 0.9).setStrokeStyle(2, 0xd8b77b).setInteractive();
+        const eatLabel = this.add.text(-72, 86, 'F', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        eat.on('pointerdown', () => this.touchEat = true);
+        eat.on('pointerup', () => this.touchEat = false);
+        eat.on('pointerout', () => this.touchEat = false);
         inventory.on('pointerdown', () => this.touchInventory = true);
         inventory.on('pointerup', () => this.touchInventory = false);
         inventory.on('pointerout', () => this.touchInventory = false);
-        actionRoot.add([interact, interactLabel, inventory, inventoryLabel]);
+        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel]);
         root.setVisible(Boolean(this.sys.game.device.input.touch));
         actionRoot.setVisible(Boolean(this.sys.game.device.input.touch));
         this.touchControlsRoot = root;
@@ -1637,6 +1731,7 @@ class WorldScene extends Phaser.Scene {
 
         this.inventory[key] = current + added;
         this.refreshInventoryUI();
+        this.playSfx('pickup');
 
         if (added < amount) {
             this.showMessage(`${def.name} storage is nearly full — received ${added} of ${amount}.`);
@@ -1731,6 +1826,7 @@ class WorldScene extends Phaser.Scene {
 
         this.refreshRecipeUI();
         this.refreshInventoryUI();
+        this.playSfx('craft');
     }
 
     refreshRecipeUI() {
@@ -2024,6 +2120,7 @@ class WorldScene extends Phaser.Scene {
         }
 
         this.refreshBoatUI();
+        this.playSfx('craft');
     }
 
     // DO016: Check if all win conditions are met
@@ -2036,6 +2133,7 @@ class WorldScene extends Phaser.Scene {
         if (!nearby || nearby.getData('kind') !== 'boatSite') return false;
 
         this.won = true;
+        this.playSfx('victory');
         this.showEnding();
         return true;
     }
@@ -2328,6 +2426,7 @@ led to this moment.`, {
         }
 
         // Start new scene with same key but fresh create()
+        this.playSfx('transition');
         this.scene.start('WorldScene', { startMapId: mapId, startTile: entryTile });
     }
 
@@ -2429,6 +2528,8 @@ led to this moment.`, {
             this.indoorPrompt.setPosition(w / 2, h - 90);
         }
 
+        if (this.nightOverlay) this.nightOverlay.setPosition(w / 2, h / 2).setSize(w, h);
+        if (this.survivalText) this.survivalText.setPosition(24, 98);
         if (this.messageText) {
             this.messageText.setPosition(w / 2, 118);
             this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, w - 48)), true);
@@ -2455,6 +2556,8 @@ led to this moment.`, {
         const escapeDown = this.keys.ESC.isDown;
         if (this.menuOpen) return;
         const inventoryDown = this.keys.I.isDown || Boolean(this.touchInventory);
+        const eatDown = this.keys.F.isDown || Boolean(this.touchEat);
+        const eatPressed = eatDown && !this.eatWasDown;
         const inventoryPressed = inventoryDown && !this.inventoryWasDown;
 
         if (inventoryPressed) {
@@ -2465,13 +2568,15 @@ led to this moment.`, {
         }
         const interactionPressed = interactionDown && !this.interactionWasDown;
         const escapePressed = escapeDown && !this.escapeWasDown;
+        if (eatPressed) this.eatFood();
+        this.updateSurvival(delta);
 
         // Indoor movement is isolated from the outdoor player, objects and map exits.
         if (this.indoorMode) {
             const GRID_W = 5;
             const GRID_H = 4;
             const INDOOR_TILE = 32;
-            const SPEED = 120;
+            const SPEED = this.survival.hunger <= 15 ? 90 : 120;
             const step = Math.min(Math.max(delta, 0), 50) / 1000;
 
             let idx = 0;
@@ -2543,6 +2648,7 @@ led to this moment.`, {
             this.interactionWasDown = interactionDown;
             this.escapeWasDown = escapeDown;
             this.inventoryWasDown = inventoryDown;
+            this.eatWasDown = eatDown;
             return;
         }
 
@@ -2650,6 +2756,7 @@ led to this moment.`, {
         this.interactionWasDown = interactionDown;
         this.escapeWasDown = escapeDown;
         this.inventoryWasDown = inventoryDown;
+        this.eatWasDown = eatDown;
 
         let dx = 0;
         let dy = 0;
@@ -2678,7 +2785,8 @@ led to this moment.`, {
             }
         }
 
-        body.setAcceleration(dx * 900, dy * 900);
+        const movementFactor = this.survival.hunger <= 15 ? 0.75 : 1;
+        body.setAcceleration(dx * 900 * movementFactor, dy * 900 * movementFactor);
         if (dx === 0) body.setAccelerationX(0);
         if (dy === 0) body.setAccelerationY(0);
 
