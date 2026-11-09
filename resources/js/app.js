@@ -1406,7 +1406,7 @@ class WorldScene extends Phaser.Scene {
             ? [
                 ['NEW GAME', () => this.startNewGame()],
                 ['CONTINUE / LOAD SAVE', () => this.loadSavedGame()],
-                ['EXIT TO BROWSER', () => this.showMessage('You can close this browser tab to exit the game.')],
+                ['EXIT TO BROWSER', () => this.showMenuNotice('To exit, close this browser tab. Browsers do not let games close their own tab.')],
             ]
             : mode === 'ending'
                 ? [
@@ -1435,7 +1435,8 @@ class WorldScene extends Phaser.Scene {
             overlay.add([button, text]);
         });
 
-        const saveExists = Boolean(localStorage.getItem('tlc-save-v1'));
+        let saveExists = false;
+        try { saveExists = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { saveExists = false; }
         if (mode === 'title' && !saveExists) {
             const note = this.add.text(0, 165, 'No saved game found. Start a new journey.', {
                 fontFamily: 'sans-serif', fontSize: '13px', color: '#8c9d87',
@@ -1447,6 +1448,15 @@ class WorldScene extends Phaser.Scene {
         }).setOrigin(0.5);
         overlay.add(footer);
         this.menuOverlay = overlay;
+    }
+
+    showMenuNotice(message) {
+        if (!this.menuOverlay) return;
+        const notice = this.add.text(0, 195, message, {
+            fontFamily: 'sans-serif', fontSize: '13px', color: '#ffe08a',
+            align: 'center', wordWrap: { width: 600 },
+        }).setOrigin(0.5);
+        this.menuOverlay.add(notice);
     }
 
     closeMenu() {
@@ -1513,7 +1523,8 @@ class WorldScene extends Phaser.Scene {
             save = null;
         }
         if (!save || save.version !== 1 || !MAPS[save.mapId] || !save.playerTile) {
-            this.showMessage('No valid saved game was found.', 'warning');
+            if (this.menuOpen) this.showMenuNotice('No valid saved game was found in this browser.');
+            else this.showMessage('No valid saved game was found.', 'warning');
             return false;
         }
 
@@ -1541,15 +1552,17 @@ class WorldScene extends Phaser.Scene {
         return this.obstacles.getChildren().map(object => ({
             name: object.getData('name'),
             kind: object.getData('kind'),
+            x: object.x,
+            y: object.y,
             searched: Boolean(object.getData('searched')),
             harvested: Boolean(object.getData('harvested')),
         }));
     }
 
     applySavedObjectStates(states = []) {
-        const lookup = new Map(states.map(state => [`${state.kind}:${state.name}`, state]));
+        const lookup = new Map(states.map(state => [`${state.kind}:${state.name}:${state.x}:${state.y}`, state]));
         for (const object of this.obstacles.getChildren()) {
-            const state = lookup.get(`${object.getData('kind')}:${object.getData('name')}`);
+            const state = lookup.get(`${object.getData('kind')}:${object.getData('name')}:${object.x}:${object.y}`);
             if (!state) continue;
             if (state.searched) object.setData('searched', true);
             if (state.harvested) object.setData('harvested', true);
