@@ -591,6 +591,7 @@ class WorldScene extends Phaser.Scene {
 
     createTextures() {
         function drawToBitmap(drawFn, key, w, h) {
+            if (this.textures.exists(key)) return this.textures.get(key);
             const c = document.createElement('canvas');
             c.width = w;
             c.height = h;
@@ -641,6 +642,7 @@ class WorldScene extends Phaser.Scene {
         }, 'workbench', 56, 46);
 
         // DO022: Indoor textures for MAP2 house discovery
+        if (!this.textures.exists('indoor_floor')) {
         const floor = this.make.graphics({ x: 0, y: 0, add: false });
         floor.fillStyle(0x8b7355, 1);
         floor.fillRect(0, 0, 32, 32);
@@ -648,7 +650,9 @@ class WorldScene extends Phaser.Scene {
         floor.strokeRect(0, 0, 32, 32);
         floor.generateTexture('indoor_floor', 32, 32);
         floor.destroy();
+        }
 
+        if (!this.textures.exists('indoor_wall')) {
         const wall = this.make.graphics({ x: 0, y: 0, add: false });
         wall.fillStyle(0x5d4037, 1);
         wall.fillRect(0, 0, 32, 32);
@@ -656,6 +660,7 @@ class WorldScene extends Phaser.Scene {
         wall.strokeRect(0, 0, 32, 32);
         wall.generateTexture('indoor_wall', 32, 32);
         wall.destroy();
+        }
 
         // Player: 32x38
         drawToBitmap.call(this, function (ctx) {
@@ -703,8 +708,8 @@ class WorldScene extends Phaser.Scene {
         const GRID_W = 5;
         const GRID_H = 4;
         const INDOOR_TILE = 32;
-        const offsetX = (960 - GRID_W * INDOOR_TILE) / 2;
-        const offsetY = (600 - GRID_H * INDOOR_TILE) / 2;
+        const offsetX = (this.scale.width - GRID_W * INDOOR_TILE) / 2;
+        const offsetY = (this.scale.height - GRID_H * INDOOR_TILE) / 2;
 
         this.indoorGrid = this.add.container(offsetX, offsetY);
         this.indoorGrid.setScrollFactor(0);
@@ -782,7 +787,7 @@ class WorldScene extends Phaser.Scene {
 
         // Indoor prompt
         if (this.indoorPrompt) this.indoorPrompt.destroy();
-        this.indoorPrompt = this.add.text(480, 420, 'E — Discover workbench inside', {
+        this.indoorPrompt = this.add.text(this.scale.width / 2, this.scale.height - 90, 'E — Discover workbench inside', {
             fontFamily: 'sans-serif',
             fontSize: '16px',
             color: '#e2f0d8',
@@ -1086,7 +1091,7 @@ class WorldScene extends Phaser.Scene {
         this.boatBuilt = GameState.boatBuilt;
 
         this.interactionPrompt = this.add.text(
-            480, 520, '',
+            this.scale.width / 2, this.scale.height - 120, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '15px',
@@ -1101,13 +1106,13 @@ class WorldScene extends Phaser.Scene {
             .setDepth(2000)
             .setVisible(false);
 
-        this.inventoryPanel = this.add.rectangle(24, 112, 240, 420, 0x0f1c12, 0.96)
+        this.inventoryPanel = this.add.rectangle(this.scale.width - 140, 230, 260, 420, 0x0f1c12, 0.96)
             .setScrollFactor(0)
             .setDepth(999)
             .setVisible(false);
 
         this.inventoryText = this.add.text(
-            24, 112, '',
+            this.scale.width - 260, 38, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '13px',
@@ -1124,7 +1129,7 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         this.messageText = this.add.text(
-            480, 465, '',
+            this.scale.width / 2, this.scale.height - 54, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '14px',
@@ -1141,7 +1146,7 @@ class WorldScene extends Phaser.Scene {
         this.messageText.setVisible(false);
 
         this.boatText = this.add.text(
-            936, 24, '',
+            this.scale.width - 24, 24, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '12px',
@@ -1159,7 +1164,7 @@ class WorldScene extends Phaser.Scene {
 
         // DO018: Hint display text
         this.hintTextObj = this.add.text(
-            480, 545, '',
+            this.scale.width / 2, this.scale.height - 24, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '12px',
@@ -1762,14 +1767,16 @@ class WorldScene extends Phaser.Scene {
         });
 
         // Create ending overlay
-        const overlay = this.add.container(480, 300);
+        const viewW = this.scale.width;
+        const viewH = this.scale.height;
+        const overlay = this.add.container(viewW / 2, viewH / 2);
         overlay.setScrollFactor(0);
         overlay.setDepth(5000);
 
-        const bg = this.add.rectangle(0, 0, 960, 600, 0x0a1a12, 0);
+        const bg = this.add.rectangle(0, 0, viewW, viewH, 0x0a1a12, 0);
         overlay.add(bg);
 
-        const title = this.add.text(480, 200, 'THE LAST CONNECTION', {
+        const title = this.add.text(0, -180, 'THE LAST CONNECTION', {
             fontFamily: 'sans-serif',
             fontSize: '36px',
             fontStyle: 'bold',
@@ -1777,25 +1784,25 @@ class WorldScene extends Phaser.Scene {
         }).setOrigin(0.5);
         overlay.add(title);
 
-        const subtitle = this.add.text(480, 260, 'You built the boat. You found your way to the coast.', {
+        const subtitle = this.add.text(0, -100, 'You built the boat. You found your way to the coast.', {
             fontFamily: 'sans-serif',
             fontSize: '18px',
             color: '#a8c0a0',
         }).setOrigin(0.5);
         overlay.add(subtitle);
 
-        const body = this.add.text(480, 320, `The horizon stretches endlessly ahead.
+        const body = this.add.text(0, -20, `The horizon stretches endlessly ahead.
 All the resources you gathered, every path you walked,
 led to this moment.`, {
             fontFamily: 'sans-serif',
             fontSize: '15px',
             color: '#7a9a72',
             align: 'center',
-            wordWrap: { width: 600 },
+            wordWrap: { width: Math.min(900, viewW - 120) },
         }).setOrigin(0.5);
         overlay.add(body);
 
-        const credits = this.add.text(480, 440, 'Press R to play again', {
+        const credits = this.add.text(0, 170, 'Press R to play again', {
             fontFamily: 'sans-serif',
             fontSize: '14px',
             color: '#5a7a52',
@@ -2052,7 +2059,7 @@ led to this moment.`, {
     }
 
     createCompass() {
-        const root = this.add.container(this.scale.width - 48, 116);
+        const root = this.add.container(this.scale.width - 72, 72);
         root.setScrollFactor(0);
         root.setDepth(1600);
 
@@ -2107,10 +2114,10 @@ led to this moment.`, {
         const h = this.scale.height;
 
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 220, 80);
+            this.inventoryPanel.setPosition(w - 140, 230);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 210, 90);
+            this.inventoryText.setPosition(w - 260, 38);
         }
 
         if (this.boatPanel) {
@@ -2121,10 +2128,10 @@ led to this moment.`, {
         }
 
         if (this.messageText) {
-            this.messageText.setPosition(w / 2, h - 40);
+            this.messageText.setPosition(w / 2, h - 54);
         }
         if (this.compassRoot) {
-            this.compassRoot.setPosition(w - 48, 116);
+            this.compassRoot.setPosition(w - 72, 72);
         }
         if (this.craftingPanel) {
             const panelH = 300;
@@ -2368,13 +2375,13 @@ if (gameContainer) {
     const game = new Phaser.Game({
         type: Phaser.CANVAS,
         parent: 'game-container',
-        width: 960,
-        height: 600,
+        width: 1920,
+        height: 1080,
         backgroundColor: '#18343b',
         pixelArt: false,
         antialias: true,
         scale: {
-            mode: Phaser.Scale.RESIZE,
+            mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
         physics: {
