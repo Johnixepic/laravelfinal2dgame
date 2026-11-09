@@ -62,7 +62,7 @@ const MAPS = {
         },
         exits: [
             { fromTile: { i: 29, j: 15 }, toMap: 'MAP3', entryTile: { i: 2, j: 15 } },
-            { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 27, j: 15 } },
+            { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 26, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [],
@@ -114,7 +114,9 @@ const MAPS = {
             edge: 0xc5b69a,
             water: 0x4a8ab5,
         },
-        exits: [],
+        exits: [
+            { fromTile: { i: 0, j: 15 }, toMap: 'MAP4', entryTile: { i: 26, j: 15 } },
+        ],
         fogMargin: 2,
         landmarks: [
             { tile: { i: 14, j: 23 }, label: 'Boat Site' },
