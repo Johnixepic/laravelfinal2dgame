@@ -7,7 +7,7 @@ A 2D exploration and crafting game built with Phaser.js and Laravel.
 You wake up on a small island with nothing but the clothes on your back. Search your home, gather resources, discover a workbench, craft tools, and repair a boat across four stages — then sail to escape.
 
 **Genre**: 2D survival/crafting exploration
-**Canvas**: 960x600 (responsive)
+**Canvas**: 1920x1080 reference canvas, scaled responsively to 16:9
 **Maps**: 5 connected island maps with eastward progression
 **Win Condition**: Build a boat through 4 stages, reach the eastern coast (MAP5), and sail away
 
@@ -46,8 +46,9 @@ php artisan optimize
 | WASD / Arrow Keys | Move |
 | E | Interact (search, gather, craft, build boat) |
 | I | Toggle inventory side panel |
-| ESC | Close crafting panel / exit indoor mode |
+| ESC | Close open panel / pause game |
 | R (after win) | Restart game |
+| Touch controls | On-screen movement, interact and inventory controls on touch devices |
 
 ## Gameplay
 
@@ -61,7 +62,7 @@ php artisan optimize
    - Stage 2: Reinforcement — 6 scrap + 4 wood
    - Stage 3: Rigging — 5 rope
    - Stage 4: Sail — 6 cloth
-7. Sail away — after all four stages are complete, press E again at the boat on MAP5 to trigger the ending cinematic
+7. Sail away — after all four stages are complete, press E again at the boat on MAP5 to trigger the ending sequence. Click the ending prompt or press ESC to access replay and main-menu options.
 
 ## Maps
 
@@ -72,6 +73,15 @@ php artisan optimize
 | MAP3 | Industrial Ruins | Steely gray | Scrap, fasteners, machinery_salvage |
 | MAP4 | Deep Wilderness | Dark forest green | Plant fibers, wood |
 | MAP5 | Coastal Escape | Shoreline green | Driftwood, cloth |
+
+## Menus and saved games
+
+- The title screen offers New Game, Continue / Load Save, and Exit to Browser.
+- Press ESC during play to pause, save to this browser, load the saved game, resume, or return to the title screen.
+- Saves use browser `localStorage` on the current device and browser. Clearing site data or changing browsers removes access to that save; this is not cloud storage.
+- Saved games include the current map and position, inventory, tools, boat progress, searched buildings, and harvested trees.
+- Touch devices receive on-screen movement, interact, and inventory controls.
+- The browser does not allow a normal webpage to close its own tab, so Exit to Browser displays a reminder instead.
 
 ## Project Structure
 
@@ -113,7 +123,8 @@ php artisan optimize
 - All game logic lives in resources/js/app.js
 - Map definitions, item data, and recipes are top-level constants for easy editing
 - DDO files track the development history; see DDO-021 for the latest architecture summary
-- The game has no audio, no mobile touch controls, and no server-side save (by design for demo scope)
+- Browser saves are local to the current browser/device; there is no server-side or cloud save.
+- Mobile touch controls are available; audio and combat/night-threat mechanics remain outside the escape-focused MVP.
 
 ## License
 
