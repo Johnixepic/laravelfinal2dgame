@@ -154,6 +154,9 @@ assert.match(source, /alreadyOwned \? 'ALREADY OWNED'/);
 assert.match(source, /this\.refreshRecipeUI\(\);/);
 assert.match(source, /GameState\.workbenchDiscovered = true/);
 assert.match(source, /GameState\.started = false/);
+assert.match(source, /GameState\.tutorialPending = true/);
+assert.match(source, /START HERE: Search Your Home/);
+assert.match(source, /this\.startNewGame\(\);/);
 assert.match(source, /this\.openMenu\('ending'\)/);
 
 
@@ -164,6 +167,9 @@ assert.match(source, /eatFood\(\) \{/);
 assert.match(source, /this\.removeItem\('food', 1\)/);
 assert.match(source, /this\.survival\.hunger <= 15 \? 0\.75 : 1/);
 assert.match(source, /NIGHT \(SAFE\)/);
+assert.match(source, /this\.survival\.elapsedMs % cycleLength/);
+assert.match(source, /this\.survival\.hunger \+ 35/);
+assert.match(source, /F TO EAT/);
 assert.match(source, /playSfx\(kind = 'interact'\)/);
 assert.match(source, /SOUND: /);
 assert.match(source, /this\.playSfx\('victory'\)/);
