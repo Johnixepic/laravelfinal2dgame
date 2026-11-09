@@ -90,8 +90,13 @@ assert.equal(
 // TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
 assert.match(source, /width: 1920,\s*height: 1080/);
 assert.match(source, /mode: Phaser\.Scale\.FIT/);
-assert.match(source, /this\.inventoryPanel\.setPosition\(w - 140, 230\)/);
-assert.match(source, /this\.inventoryText\.setPosition\(w - 260, 38\)/);
+assert.match(source, /this\.inventoryPanel\.setPosition\(w - 210, 250\)/);
+assert.match(source, /this\.inventoryText\.setPosition\(w - 380, 42\)/);
+assert.match(source, /this\.inventoryPanel = this\.add\.rectangle\([^\n]+380, 460/);
+assert.match(source, /this\.inventoryPanel[\s\S]*?setDepth\(5000\)/);
+assert.match(source, /this\.inventoryText[\s\S]*?setDepth\(5001\)/);
+assert.match(source, /if \(this\.inventoryOpen\) this\.refreshInventoryUI\(\)/);
+assert.match(source, /if \(escapePressed && this\.inventoryOpen\)/);
 assert.match(source, /this\.messageText\.setPosition\(w \/ 2, 118\)/);
 assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
 assert.match(source, /this\.mapLabel = null;/);
