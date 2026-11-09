@@ -90,10 +90,14 @@
             overflow: hidden;
         }
 
-        /* Let Phaser's FIT scale manager own the canvas dimensions.
-           Overriding them with CSS percentages desynchronizes pointer coordinates. */
+        /* Keep the visible canvas exactly aligned with Phaser's measured parent.
+           The game and parent are both 16:9, so this does not distort the render. */
         #game-container canvas {
+            position: absolute;
+            inset: 0;
             display: block;
+            width: 100%;
+            height: 100%;
             touch-action: none;
         }
 
