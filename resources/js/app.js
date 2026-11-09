@@ -509,6 +509,7 @@ class WorldScene extends Phaser.Scene {
 
         // DO010: Position UI panels
         this.repositionUI();
+        this.scale.on('resize', this.repositionUI, this);
     }
 
     tilePosition(i, j) {
@@ -1203,6 +1204,18 @@ class WorldScene extends Phaser.Scene {
 
         const recipeScrollArea = this.add.container(0, -43);
 
+        const panelHint = this.add.text(
+            0,
+            130,
+            'Scroll to browse  ·  Click a recipe to craft  ·  ESC to close',
+            {
+                fontFamily: 'sans-serif',
+                fontSize: '10px',
+                color: '#a8c0a0',
+                align: 'center',
+            }
+        ).setOrigin(0.5);
+
         let cardY = 0;
 
         const recipeMaskShape = this.add.graphics();
@@ -1219,7 +1232,7 @@ class WorldScene extends Phaser.Scene {
         this.recipeScrollArea = recipeScrollArea;
         this.recipeScrollOffset = 0;
 
-        this.craftingPanel.add([panelBackground, panelBorder, panelTitle, recipeScrollArea]);
+        this.craftingPanel.add([panelBackground, panelBorder, panelTitle, recipeScrollArea, panelHint]);
 
         for (const recipe of RECIPES) {
             const card = this.add.container(0, cardY);
@@ -2160,6 +2173,7 @@ led to this moment.`, {
                 idx /= length;
                 idy /= length;
             }
+            this.updateCompass(idx, idy);
 
             const clampedX = Phaser.Math.Clamp(
                 this.indoorPlayer.x + idx * SPEED * step,
