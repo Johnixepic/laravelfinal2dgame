@@ -86,7 +86,7 @@ php artisan optimize
 
 - The title screen offers New Game, Continue / Load Save, and Exit to Browser.
 - Press ESC during play to pause, save to this browser, load the saved game, resume, or return to the title screen.
-- Saves use browser `localStorage` on the current device and browser. Clearing site data or changing browsers removes access to that save; this is not cloud storage.
+- Saves use browser `localStorage` on the current device and browser. The game quietly autosaves about once per minute and creates a checkpoint whenever you change maps; you can also save manually from the pause menu. Clearing site data or changing browsers removes access to that save; this is not cloud storage.
 - Saved games include the current map and position, inventory, tools, boat progress, searched buildings, and harvested trees.
 - Touch devices receive on-screen movement, interact, inventory, and eat controls.
 - The browser does not allow a normal webpage to close its own tab, so Exit to Browser displays a reminder instead.
