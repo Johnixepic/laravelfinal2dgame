@@ -3100,9 +3100,15 @@ if (gameContainer) {
         scene: [WorldScene],
     });
 
-    game.events.on('ready', () => {
-    });
-    game.events.on('shutdown', () => {
-    });
+    // Re-measure the canvas after the page's flex/aspect-ratio layout settles.
+    // This keeps Phaser's pointer coordinate transform in sync with its DOM bounds.
+    const refreshCanvasScale = () => {
+        window.requestAnimationFrame(() => game.scale.refresh());
+    };
+    const canvasResizeObserver = new ResizeObserver(refreshCanvasScale);
+    canvasResizeObserver.observe(gameContainer);
+    game.events.on('ready', refreshCanvasScale);
+    game.events.once('destroy', () => canvasResizeObserver.disconnect());
+    window.addEventListener('resize', refreshCanvasScale);
 } else {
 }
