@@ -1238,7 +1238,7 @@ class WorldScene extends Phaser.Scene {
         if (this.recipeMaskShape) this.recipeMaskShape.destroy();
         const recipeMaskShape = this.make.graphics({ x: px, y: py, add: false });
         recipeMaskShape.fillStyle(0xffffff, 1);
-        recipeMaskShape.fillRect(-300, -285, 600, 555);
+        recipeMaskShape.fillRect(-300, -305, 600, 575);
 
         const recipeMask = recipeMaskShape.createGeometryMask();
         recipeScrollArea.setMask(recipeMask);
@@ -1334,10 +1334,10 @@ class WorldScene extends Phaser.Scene {
         this.input.on('wheel', (pointer, currentlyOver, deltaX, deltaY) => {
             if (!this.craftingOpen || !this.recipeScrollArea) return;
             const bounds = {
-                left: this.craftingPanel.x - 195,
-                right: this.craftingPanel.x + 195,
-                top: this.craftingPanel.y - 150,
-                bottom: this.craftingPanel.y + 150,
+                left: this.craftingPanel.x - 320,
+                right: this.craftingPanel.x + 320,
+                top: this.craftingPanel.y - 350,
+                bottom: this.craftingPanel.y + 350,
             };
             if (pointer.x < bounds.left || pointer.x > bounds.right ||
                 pointer.y < bounds.top || pointer.y > bounds.bottom) return;
