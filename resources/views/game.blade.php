@@ -71,6 +71,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            align-items: center;
             overflow: hidden;
             border: 0;
             border-radius: 0;
@@ -82,7 +83,9 @@
             min-width: 0;
             min-height: 0;
             width: 100%;
+            max-width: calc((100vh - 110px) * 16 / 9);
             height: 100%;
+            aspect-ratio: 16 / 9;
             overflow: hidden;
         }
 
