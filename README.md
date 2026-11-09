@@ -47,6 +47,7 @@ php artisan optimize
 | E | Interact (search, gather, craft, build boat) |
 | I | Toggle inventory side panel |
 | ESC | Close open panel / pause game |
+| F | Eat one food item to restore hunger |
 | R (after win) | Restart game |
 | Touch controls | On-screen movement, interact and inventory controls on touch devices |
 
@@ -74,13 +75,20 @@ php artisan optimize
 | MAP4 | Deep Wilderness | Dark forest green | Plant fibers, wood |
 | MAP5 | Coastal Escape | Shoreline green | Driftwood, cloth |
 
+## Survival, audio and touch controls
+
+- The world cycles through daylight and night. Night is currently safe: there are no hostile creature encounters or combat in this MVP.
+- Hunger decreases gradually while playing. Press F (or tap the F touch button) to consume one Food and restore hunger; low hunger reduces movement speed but never blocks the ending.
+- Short synthesized sound cues play for pickups, crafting, map transitions, eating, and victory. Sound can be toggled from the pause menu.
+- Touch devices receive on-screen movement, interact, inventory, and eat controls.
+
 ## Menus and saved games
 
 - The title screen offers New Game, Continue / Load Save, and Exit to Browser.
 - Press ESC during play to pause, save to this browser, load the saved game, resume, or return to the title screen.
 - Saves use browser `localStorage` on the current device and browser. Clearing site data or changing browsers removes access to that save; this is not cloud storage.
 - Saved games include the current map and position, inventory, tools, boat progress, searched buildings, and harvested trees.
-- Touch devices receive on-screen movement, interact, and inventory controls.
+- Touch devices receive on-screen movement, interact, inventory, and eat controls.
 - The browser does not allow a normal webpage to close its own tab, so Exit to Browser displays a reminder instead.
 
 ## Project Structure
@@ -124,7 +132,7 @@ php artisan optimize
 - Map definitions, item data, and recipes are top-level constants for easy editing
 - DDO files track the development history; see DDO-021 for the latest architecture summary
 - Browser saves are local to the current browser/device; there is no server-side or cloud save.
-- Mobile touch controls are available; audio and combat/night-threat mechanics remain outside the escape-focused MVP.
+- Mobile touch controls, basic hunger/food, a safe day/night cycle, and synthesized sound cues are included. Combat and hostile night encounters remain outside the escape-focused MVP.
 
 ## License
 
