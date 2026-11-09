@@ -197,7 +197,7 @@ assert.match(source, /itemKey', itemKey/);
 assert.match(source, /if \(kind === 'gatherable'\)/);
 assert.match(source, /const amount = itemKey === 'machinery_salvage' \? 1 : 2/);
 assert.match(source, /object\.setAlpha\(0\.35\)/);
-assert.match(source, /const blocked = this\.obstacles\.getChildren\(\)\.some/);
+
 
 // TLC-028: every map profile now creates collectible salvage and every salvage family can be processed.
 assert.match(source, /const resourceTiles = \[\[14, 6\]/);
@@ -207,6 +207,12 @@ for (const recipeId of ['recycleBranches', 'processDriftwood', 'twistFibers', 't
     assert.match(source, new RegExp("id: '" + recipeId + "'"), "Missing salvage processing recipe: " + recipeId);
 }
 assert.match(source, /this\.inventoryWasDown = false;[\s\S]*?this\.eatWasDown = false;/);
+
+assert.match(source, /const preferredResourceTiles = \\[\\[14, 6\\]/);
+assert.match(source, /resourceCandidates\.find/);
+assert.match(source, /resourceCandidates\.push\(\[i, j\]\)/);
+assert.match(source, /GameState\.inventory = Object\.fromEntries\(Object\.keys\(ITEM_DEFS\)\.map/);
+assert.match(source, /this\.scale\.off\('resize', this\.repositionUI, this\)/);
 
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
