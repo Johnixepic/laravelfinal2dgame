@@ -1206,9 +1206,9 @@ class WorldScene extends Phaser.Scene {
         let cardY = 0;
 
         const recipeMaskShape = this.add.graphics();
-        recipeMaskShape.setPosition(px, py - 43);
+        recipeMaskShape.setPosition(px, py);
         recipeMaskShape.fillStyle(0xffffff, 1);
-        recipeMaskShape.fillRect(-185, -105, 370, 205);
+        recipeMaskShape.fillRect(-185, -95, 370, 205);
 
         const recipeMask = recipeMaskShape.createGeometryMask();
         recipeScrollArea.setMask(recipeMask);
@@ -2119,7 +2119,7 @@ led to this moment.`, {
             const panelY = Math.max(panelH / 2 + 10, Math.min(h - panelH / 2 - 10, h / 2 - 40));
             this.craftingPanel.setPosition(w / 2, panelY);
             this.craftingPanelPosition = { x: w / 2, y: panelY };
-            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY - 43);
+            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY);
         }
     }
 
