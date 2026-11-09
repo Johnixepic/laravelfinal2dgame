@@ -101,8 +101,10 @@ assert.match(source, /Draw each exit gate from the same tile coordinates used by
 assert.match(source, /const p = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
 assert.match(source, /const gatePosition = this\.tilePosition\(exit\.fromTile\.i, exit\.fromTile\.j\)/);
 assert.match(source, /if \(distance <= 58\)/);
-assert.equal((source.match(/entryTile: \{ i: 2, j: 15 \}/g) || []).length, 4, 'Eastbound arrivals must spawn two tiles inside the next map');
-assert.equal((source.match(/entryTile: \{ i: 27, j: 15 \}/g) || []).length, 3, 'Westbound arrivals must spawn two tiles inside the previous map');
+assert.equal((source.match(/entryTile: \{ i: 2, j: 15 \}/g) || []).length, 4, 'Eastbound arrivals must spawn safely inside the next map');
+assert.equal((source.match(/entryTile: \{ i: 27, j: 15 \}/g) || []).length, 2, 'Intermediate westbound arrivals must spawn safely inside the previous map');
+assert.equal((source.match(/entryTile: \{ i: 26, j: 15 \}/g) || []).length, 2, 'Home and final-island arrivals must spawn beyond the destination gate trigger');
+assert.match(source, /fromTile: \{ i: 0, j: 15 \}, toMap: 'MAP4', entryTile: \{ i: 26, j: 15 \}/, 'Final island must have a return gate to MAP4');
 assert.match(source, /const panelW = 640, panelH = 700/);
 assert.match(source, /panelBorder\.strokeRect\(-320, -350, 640, 700\)/);
 assert.match(source, /this\.add\.text\(\s*275,\s*-20,/);
