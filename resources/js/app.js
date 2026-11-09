@@ -1147,7 +1147,7 @@ class WorldScene extends Phaser.Scene {
         this.messageText.setVisible(false);
 
         this.boatText = this.add.text(
-            this.scale.width - 24, 24, '',
+            24, 24, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '12px',
@@ -1159,7 +1159,7 @@ class WorldScene extends Phaser.Scene {
                 wordWrap: { width: 220 },
             }
         )
-            .setOrigin(1, 0)
+            .setOrigin(0, 0)
             .setScrollFactor(0)
             .setDepth(1000);
 
@@ -2125,7 +2125,16 @@ led to this moment.`, {
             this.boatPanel.setPosition(24, h - 180);
         }
         if (this.boatText) {
-            this.boatText.setPosition(24, h - 170);
+            this.boatText.setPosition(24, 24);
+        }
+        if (this.interactionPrompt) {
+            this.interactionPrompt.setPosition(w / 2, h - 120);
+        }
+        if (this.hintTextObj) {
+            this.hintTextObj.setPosition(w / 2, h - 24);
+        }
+        if (this.indoorPrompt) {
+            this.indoorPrompt.setPosition(w / 2, h - 90);
         }
 
         if (this.messageText) {
