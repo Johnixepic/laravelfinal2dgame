@@ -461,8 +461,24 @@ class WorldScene extends Phaser.Scene {
             : null;
 
         const mapDef = MAPS[startMapId] || MAPS.MAP1;
-        this.currentMapId = startMapId;
+        this.currentMapId = mapDef.id;
         this.mapDef = mapDef;
+
+        // Every scene start receives a complete, normalized run state.
+        // New Game and Replay must never inherit a previous victory or pause state.
+        this.won = false;
+        this.endingActive = false;
+        this.menuOpen = false;
+        this.menuMode = null;
+        this.inventoryOpen = false;
+        this.craftingOpen = false;
+        this.transitioningMap = false;
+        this.nearbyObject = null;
+        this.touchKeys = { up: false, down: false, left: false, right: false };
+        this.touchInteract = false;
+        this.touchInventory = false;
+        this.touchEat = false;
+        this.audioEnabled = GameState.audioEnabled !== false;
         // Scene restarts reuse WorldScene; discard stale UI GameObject references.
         this.mapLabel = null;
         this.cols = mapDef.dims.cols;
@@ -1582,8 +1598,13 @@ class WorldScene extends Phaser.Scene {
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
         GameState.objectStates = {};
-        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0 };
+        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0, day: 1, isNight: false };
         GameState.started = true;
+        GameState.audioEnabled = true;
+        this.won = false;
+        this.endingActive = false;
+        this.menuOpen = false;
+        this.menuMode = null;
         GameState.tutorialPending = true;
         try { localStorage.removeItem('tlc-save-v1'); } catch (error) { /* Starting a new run must still work if storage is blocked. */ }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
@@ -1605,7 +1626,8 @@ class WorldScene extends Phaser.Scene {
             boatBuilt: this.boatBuilt,
             workbenchDiscovered: this.workbenchDiscovered,
             survival: { ...this.survival },
-            objectStates: { ...GameState.objectStates },
+            objectStates: JSON.parse(JSON.stringify(GameState.objectStates)),
+            audioEnabled: this.audioEnabled !== false,
         };
         try {
             localStorage.setItem('tlc-save-v1', JSON.stringify(save));
@@ -1632,23 +1654,63 @@ class WorldScene extends Phaser.Scene {
         } catch (error) {
             save = null;
         }
-        if (!save || save.version !== 1 || !MAPS[save.mapId] || !save.playerTile) {
+        const validTile = save?.playerTile &&
+            Number.isFinite(save.playerTile.i) && Number.isFinite(save.playerTile.j) &&
+            save.playerTile.i >= 0 && save.playerTile.i < 30 &&
+            save.playerTile.j >= 0 && save.playerTile.j < 30;
+        const validInventory = save?.inventory && typeof save.inventory === 'object' &&
+            Object.keys(ITEM_DEFS).every(key =>
+                Number.isInteger(save.inventory[key] ?? 0) &&
+                (save.inventory[key] ?? 0) >= 0 &&
+                (save.inventory[key] ?? 0) <= ITEM_DEFS[key].limit
+            );
+        const validEquipment = save?.equipment && ['saw', 'hammer', 'crowbar', 'screwdriver']
+            .every(key => typeof save.equipment[key] === 'boolean');
+        const validBoat = Number.isInteger(save?.boatStage) &&
+            save.boatStage >= 0 && save.boatStage <= BOAT_STAGES.length &&
+            Array.isArray(save.boatStagesCompleted) &&
+            save.boatStagesCompleted.length === BOAT_STAGES.length &&
+            save.boatStagesCompleted.every(value => typeof value === 'boolean') &&
+            Boolean(save.boatBuilt) === (save.boatStage === BOAT_STAGES.length);
+        const validSurvival = save?.survival &&
+            Number.isFinite(save.survival.elapsedMs) && save.survival.elapsedMs >= 0 &&
+            Number.isFinite(save.survival.hunger) && save.survival.hunger >= 0 &&
+            save.survival.hunger <= 100 &&
+            Number.isFinite(save.survival.hungerTickMs) &&
+            save.survival.hungerTickMs >= 0 && save.survival.hungerTickMs < 15000;
+        const validObjectStates = save?.objectStates && typeof save.objectStates === 'object' &&
+            !Array.isArray(save.objectStates) &&
+            Object.entries(save.objectStates).every(([mapId, states]) =>
+                MAPS[mapId] && Array.isArray(states) &&
+                states.every(state => state && typeof state.name === 'string' &&
+                    typeof state.kind === 'string' && Number.isFinite(state.x) &&
+                    Number.isFinite(state.y) && typeof state.searched === 'boolean' &&
+                    typeof state.harvested === 'boolean')
+            );
+
+        if (!save || save.version !== 1 || !MAPS[save.mapId] || !validTile ||
+            !validInventory || !validEquipment || !validBoat || !validSurvival ||
+            !validObjectStates) {
             if (this.menuOpen) this.showMenuNotice('No valid saved game was found in this browser.');
             else this.showMessage('No valid saved game was found.', 'warning');
             return false;
         }
 
+        // Restore every shared subsystem before the scene is recreated.
         GameState.inventory = { ...save.inventory };
         GameState.equipment = { ...save.equipment };
-        GameState.boatStage = save.boatStage || 0;
-        GameState.boatStagesCompleted = [...(save.boatStagesCompleted || [false, false, false, false])];
+        GameState.boatStage = save.boatStage;
+        GameState.boatStagesCompleted = [...save.boatStagesCompleted];
         GameState.boatBuilt = Boolean(save.boatBuilt);
         GameState.workbenchDiscovered = Boolean(save.workbenchDiscovered);
+        GameState.survival = { ...save.survival };
+        GameState.objectStates = JSON.parse(JSON.stringify(save.objectStates));
+        GameState.audioEnabled = save.audioEnabled !== false;
         GameState.started = true;
         this.scene.start('WorldScene', {
             startMapId: save.mapId,
             startTile: save.playerTile,
-            objectStates: save.objectStates || {},
+            objectStates: GameState.objectStates,
         });
         return true;
     }
@@ -2414,6 +2476,29 @@ THE END`, {
         GameState.workbenchDiscovered = this.workbenchDiscovered || false;
         GameState.survival = { ...this.survival };
         GameState.objectStates[this.currentMapId] = this.captureCurrentMapObjectStates();
+
+        // Persist the just-captured map state and shared progression before leaving.
+        // A storage failure must not block movement to the next map.
+        try {
+            const previousSave = JSON.parse(localStorage.getItem('tlc-save-v1') || 'null');
+            if (previousSave?.version === 1) {
+                previousSave.mapId = this.currentMapId;
+                previousSave.playerTile = this.playerTile();
+                previousSave.inventory = { ...this.inventory };
+                previousSave.equipment = { ...this.equipment };
+                previousSave.boatStage = this.boatStage;
+                previousSave.boatStagesCompleted = [...this.boatStagesCompleted];
+                previousSave.boatBuilt = this.boatBuilt;
+                previousSave.workbenchDiscovered = this.workbenchDiscovered;
+                previousSave.survival = { ...this.survival };
+                previousSave.objectStates = JSON.parse(JSON.stringify(GameState.objectStates));
+                previousSave.audioEnabled = this.audioEnabled !== false;
+                previousSave.savedAt = new Date().toISOString();
+                localStorage.setItem('tlc-save-v1', JSON.stringify(previousSave));
+            }
+        } catch (error) {
+            // Map transitions remain playable when browser storage is unavailable.
+        }
 
         // Close crafting panel if open
         if (this.craftingOpen) {
