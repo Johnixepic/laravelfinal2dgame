@@ -200,7 +200,7 @@ assert.match(source, /object\.setAlpha\(0\.35\)/);
 
 
 // TLC-028: every map profile now creates collectible salvage and every salvage family can be processed.
-assert.match(source, /const resourceTiles = \[\[14, 6\]/);
+assert.match(source, /const preferredResourceTiles = \\[\\[14, 6\\]/);
 assert.match(source, /cache\.setData\('kind', 'gatherable'\)/);
 assert.match(source, /cache\.setData\('itemKey', itemKey\)/);
 for (const recipeId of ['recycleBranches', 'processDriftwood', 'twistFibers', 'twistNaturalFibers', 'recycleHouseholdScrap', 'recycleMachinery', 'recycleFasteners']) {
