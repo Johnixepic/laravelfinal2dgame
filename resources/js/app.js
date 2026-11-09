@@ -1457,8 +1457,9 @@ class WorldScene extends Phaser.Scene {
             card.on('pointerout', () => {
                 cardBg.setFillStyle(0x1a2e1d);
             });
-            card.on('pointerdown', () => {
-                this.craftRecipe(recipe);
+            card.on('pointerup', () => {
+                // A swipe scrolls the recipe list; only a tap/click crafts.
+                if (!this.recipeDragMoved) this.craftRecipe(recipe);
             });
 
             recipeScrollArea.add(card);
@@ -1483,6 +1484,36 @@ class WorldScene extends Phaser.Scene {
 
             this.recipeScrollOffset = Phaser.Math.Clamp(
                 this.recipeScrollOffset + deltaY * 0.65,
+                0,
+                this.recipeScrollMax
+            );
+            this.recipeScrollArea.setY(-270 - this.recipeScrollOffset);
+        });
+
+        // Touch users need a swipe gesture because mobile browsers have no mouse wheel.
+        this.recipeDragMoved = false;
+        this.recipeDragStart = null;
+        this.input.on('pointerdown', pointer => {
+            if (!this.craftingOpen || !this.recipeScrollArea) return;
+            const left = this.craftingPanel.x - 300;
+            const right = this.craftingPanel.x + 300;
+            const top = this.craftingPanel.y - 305;
+            const bottom = this.craftingPanel.y + 270;
+            if (pointer.x >= left && pointer.x <= right &&
+                pointer.y >= top && pointer.y <= bottom) {
+                this.recipeDragStart = { y: pointer.y, offset: this.recipeScrollOffset };
+                this.recipeDragMoved = false;
+            } else {
+                this.recipeDragStart = null;
+            }
+        });
+        this.input.on('pointermove', pointer => {
+            if (!this.recipeDragStart || !pointer.isDown || !this.craftingOpen) return;
+            const delta = this.recipeDragStart.y - pointer.y;
+            if (Math.abs(delta) > 8) this.recipeDragMoved = true;
+            if (!this.recipeDragMoved) return;
+            this.recipeScrollOffset = Phaser.Math.Clamp(
+                this.recipeDragStart.offset + delta,
                 0,
                 this.recipeScrollMax
             );
