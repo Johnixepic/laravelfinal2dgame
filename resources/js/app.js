@@ -36,7 +36,7 @@ const MAPS = {
             shore: 0xc2b280,
         },
         exits: [
-            { fromTile: { i: 28, j: 15 }, toMap: 'MAP2', entryTile: { i: 0, j: 15 } },
+            { fromTile: { i: 28, j: 15 }, toMap: 'MAP2', entryTile: { i: 2, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [
@@ -57,8 +57,8 @@ const MAPS = {
             water: 0x3a6b8a,
         },
         exits: [
-            { fromTile: { i: 29, j: 15 }, toMap: 'MAP3', entryTile: { i: 0, j: 15 } },
-            { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 28, j: 15 } },
+            { fromTile: { i: 29, j: 15 }, toMap: 'MAP3', entryTile: { i: 2, j: 15 } },
+            { fromTile: { i: 0, j: 15 }, toMap: 'MAP1', entryTile: { i: 27, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [],
@@ -75,8 +75,8 @@ const MAPS = {
             water: 0x3a6b8a,
         },
         exits: [
-            { fromTile: { i: 29, j: 15 }, toMap: 'MAP4', entryTile: { i: 0, j: 15 } },
-            { fromTile: { i: 0, j: 15 }, toMap: 'MAP2', entryTile: { i: 28, j: 15 } },
+            { fromTile: { i: 29, j: 15 }, toMap: 'MAP4', entryTile: { i: 2, j: 15 } },
+            { fromTile: { i: 0, j: 15 }, toMap: 'MAP2', entryTile: { i: 27, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [],
@@ -93,8 +93,8 @@ const MAPS = {
             water: 0x3a6b8a,
         },
         exits: [
-            { fromTile: { i: 29, j: 15 }, toMap: 'MAP5', entryTile: { i: 0, j: 15 } },
-            { fromTile: { i: 0, j: 15 }, toMap: 'MAP3', entryTile: { i: 28, j: 15 } },
+            { fromTile: { i: 29, j: 15 }, toMap: 'MAP5', entryTile: { i: 2, j: 15 } },
+            { fromTile: { i: 0, j: 15 }, toMap: 'MAP3', entryTile: { i: 27, j: 15 } },
         ],
         fogMargin: 2,
         landmarks: [],
@@ -1193,9 +1193,9 @@ class WorldScene extends Phaser.Scene {
 
         const camW = this.cameras.main.width;
         const camH = this.cameras.main.height;
-        const panelW = 390, panelH = 300;
+        const panelW = 640, panelH = 700;
         const px = camW / 2;
-        const py = Math.max(panelH / 2 + 10, Math.min(camH - panelH / 2 - 10, camH / 2 - 40));
+        const py = camH / 2;
         this.craftingPanel = this.add.container(px, py);
         this.craftingPanel.setScrollFactor(0);
         this.craftingPanel.setDepth(3000);
@@ -1203,12 +1203,12 @@ class WorldScene extends Phaser.Scene {
 
         const panelBorder = this.add.graphics();
         panelBorder.lineStyle(2, 0x9bb58b, 1);
-        panelBorder.strokeRect(-195, -150, 390, 300);
+        panelBorder.strokeRect(-320, -350, 640, 700);
 
-        const panelBackground = this.add.rectangle(0, 0, 390, 300, 0x0f1c12, 1);
+        const panelBackground = this.add.rectangle(0, 0, 640, 700, 0x0f1c12, 0.98);
 
         const panelTitle = this.add.text(
-            0, -128, 'WORKBENCH',
+            0, -315, 'WORKBENCH',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '22px',
@@ -1217,15 +1217,15 @@ class WorldScene extends Phaser.Scene {
             }
         ).setOrigin(0.5);
 
-        const recipeScrollArea = this.add.container(0, -43);
+        const recipeScrollArea = this.add.container(0, -270);
 
         const panelHint = this.add.text(
             0,
-            130,
+            320,
             'Scroll to browse  ·  Click a recipe to craft  ·  ESC to close',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '10px',
+                fontSize: '14px',
                 color: '#a8c0a0',
                 align: 'center',
             }
@@ -1238,7 +1238,7 @@ class WorldScene extends Phaser.Scene {
         if (this.recipeMaskShape) this.recipeMaskShape.destroy();
         const recipeMaskShape = this.make.graphics({ x: px, y: py, add: false });
         recipeMaskShape.fillStyle(0xffffff, 1);
-        recipeMaskShape.fillRect(-185, -95, 370, 205);
+        recipeMaskShape.fillRect(-300, -285, 600, 555);
 
         const recipeMask = recipeMaskShape.createGeometryMask();
         recipeScrollArea.setMask(recipeMask);
@@ -1252,61 +1252,61 @@ class WorldScene extends Phaser.Scene {
             const card = this.add.container(0, cardY);
             const cardBorder = this.add.graphics();
             cardBorder.lineStyle(1, 0x5a7a52, 1);
-            cardBorder.strokeRect(-186, -25, 372, 50);
+            cardBorder.strokeRect(-290, -30, 580, 60);
             card.add(cardBorder, 0);
 
-            const cardBg = this.add.rectangle(0, 0, 370, 48, 0x1a2e1d, 1);
+            const cardBg = this.add.rectangle(0, 0, 578, 58, 0x1a2e1d, 1);
             card.add(cardBg);
 
             const canCraft = Object.entries(recipe.ingredients).every(
                 ([key, amount]) => this.hasItem(key, amount)
             );
 
-            const nameText = this.add.text(-175, -12, recipe.name, {
+            const nameText = this.add.text(-270, -21, recipe.name, {
                 fontFamily: 'sans-serif',
                 fontSize: '14px',
                 fontStyle: 'bold',
                 color: canCraft ? '#e2f0d8' : '#7a8a72',
-                wordWrap: { width: 160 },
+                wordWrap: { width: 330 },
             });
             card.add(nameText);
             card.setData('nameText', nameText);
 
-            const ingredientText = this.add.text(-175, 6,
+            const ingredientText = this.add.text(-270, 3,
                 Object.entries(recipe.ingredients).map(
                     ([k, a]) => `${ITEM_DEFS[k].name}: ${this.getItem(k)}/${a}`
                 ).join('  |  '),
                 {
                     fontFamily: 'sans-serif',
-                    fontSize: '11px',
+                    fontSize: '13px',
                     color: canCraft ? '#c8dcc0' : '#5a6a52',
-                    wordWrap: { width: 160 },
+                    wordWrap: { width: 330 },
                 }
             );
             card.add(ingredientText);
             card.setData('ingredientText', ingredientText);
 
             const descText = this.add.text(
-                175,
-                -4,
+                275,
+                -20,
                 `${recipe.desc}\n${canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`,
                 {
                     fontFamily: 'sans-serif',
-                    fontSize: '10px',
+                    fontSize: '12px',
                     color: canCraft ? '#a8c0a0' : '#8a927f',
                     align: 'right',
-                    wordWrap: { width: 170 },
+                    wordWrap: { width: 190 },
                 }
-            );
+            ).setOrigin(1, 0);
             card.add(descText);
             card.setData('descText', descText);
             card.setData('cardBorder', cardBorder);
 
             cardBorder.clear();
             cardBorder.lineStyle(1, canCraft ? 0x9bb58b : 0x3a4a32, 1);
-            cardBorder.strokeRect(-186, -25, 372, 50);
+            cardBorder.strokeRect(-290, -30, 580, 60);
             card.setInteractive(
-                new Phaser.Geom.Rectangle(-185, -24, 370, 48),
+                new Phaser.Geom.Rectangle(-290, -29, 580, 58),
                 Phaser.Geom.Rectangle.Contains
             );
             card.setData('recipeId', recipe.id);
@@ -1324,12 +1324,12 @@ class WorldScene extends Phaser.Scene {
 
             recipeScrollArea.add(card);
             this.recipeCards.push(card);
-            cardY += 56;
+            cardY += 68;
         }
 
         this.craftingPanel.setVisible(false);
         this.craftingOpen = false;
-        this.recipeScrollMax = Math.max(0, cardY - 205);
+        this.recipeScrollMax = Math.max(0, cardY - 535);
 
         this.input.on('wheel', (pointer, currentlyOver, deltaX, deltaY) => {
             if (!this.craftingOpen || !this.recipeScrollArea) return;
@@ -1347,7 +1347,7 @@ class WorldScene extends Phaser.Scene {
                 0,
                 this.recipeScrollMax
             );
-            this.recipeScrollArea.setY(-43 - this.recipeScrollOffset);
+            this.recipeScrollArea.setY(-270 - this.recipeScrollOffset);
         });
 
         this.createCompass();
@@ -2151,8 +2151,8 @@ led to this moment.`, {
             this.compassRoot.setPosition(w - 72, 72);
         }
         if (this.craftingPanel) {
-            const panelH = 300;
-            const panelY = Math.max(panelH / 2 + 10, Math.min(h - panelH / 2 - 10, h / 2 - 40));
+            const panelH = 700;
+            const panelY = h / 2;
             this.craftingPanel.setPosition(w / 2, panelY);
             this.craftingPanelPosition = { x: w / 2, y: panelY };
             if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY);
