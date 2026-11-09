@@ -1874,8 +1874,14 @@ class WorldScene extends Phaser.Scene {
         for (const object of this.obstacles.getChildren()) {
             const state = lookup.get(`${object.getData('kind')}:${object.getData('name')}:${object.x}:${object.y}`);
             if (!state) continue;
-            if (state.searched) object.setData('searched', true);
-            if (state.harvested) object.setData('harvested', true);
+            if (state.searched) {
+                object.setData('searched', true);
+                object.setAlpha(0.45);
+            }
+            if (state.harvested) {
+                object.setData('harvested', true);
+                object.setAlpha(0.35);
+            }
         }
     }
 
