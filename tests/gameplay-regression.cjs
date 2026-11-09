@@ -173,6 +173,7 @@ assert.match(source, /F TO EAT/);
 assert.match(source, /playSfx\(kind = 'interact'\)/);
 assert.match(source, /SOUND: /);
 assert.match(source, /this\.playSfx\('victory'\)/);
+assert.match(source, /keyboard\.once\('keydown-R'/);
 assert.match(source, /GameState\.survival = \{ \.\.\.this\.survival \}/);
 
 console.log('Gameplay regression checks: PASS');
