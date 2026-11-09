@@ -89,10 +89,13 @@
             overflow: hidden;
         }
 
+        /* Let Phaser's FIT scale manager size and position the canvas.
+           Forcing CSS width/height here desynchronizes pointer coordinates. */
         #game-container canvas {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
+            max-width: 100%;
+            max-height: 100%;
+            touch-action: none;
         }
 
         .game-footer {
