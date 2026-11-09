@@ -90,9 +90,9 @@ assert.equal(
 // TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
 assert.match(source, /width: 1920,\s*height: 1080/);
 assert.match(source, /mode: Phaser\.Scale\.FIT/);
-assert.match(source, /this\.inventoryPanel\.setPosition\(w - 210, 250\)/);
-assert.match(source, /this\.inventoryText\.setPosition\(w - 380, 42\)/);
-assert.match(source, /this\.inventoryPanel = this\.add\.rectangle\([^\n]+380, 460/);
+assert.match(source, /this\.inventoryPanel\.setPosition\(w - 260, 380\)/);
+assert.match(source, /this\.inventoryText\.setPosition\(w - 480, 75\)/);
+assert.match(source, /this\.inventoryPanel = this\.add\.rectangle\([^\n]+480, 640/);
 assert.match(source, /this\.inventoryPanel[\s\S]*?setDepth\(5000\)/);
 assert.match(source, /this\.inventoryText[\s\S]*?setDepth\(5001\)/);
 assert.match(source, /if \(this\.inventoryOpen\) this\.refreshInventoryUI\(\)/);
@@ -125,6 +125,27 @@ assert.match(source, /checkWinCondition\(interactionPressed = false\)/);
 assert.match(source, /if \(!interactionPressed \|\| this\.won \|\| !this\.boatBuilt \|\| this\.currentMapId !== 'MAP5'\)/);
 assert.match(update, /if \(this\.boatBuilt\) \{\s*this\.checkWinCondition\(true\)/);
 assert.match(source, /GameState\.boatStagesCompleted = \[false, false, false, false\]/);
+
+
+ // TLC-026: complete game flow, browser save/load, touch support and guaranteed opening supplies.
+assert.match(source, /createGameMenu\(\) \{/);
+assert.match(source, /openMenu\(mode = 'pause'\)/);
+assert.match(source, /startNewGame\(\) \{/);
+assert.match(source, /saveGame\(\) \{/);
+assert.match(source, /localStorage\.setItem\('tlc-save-v1'/);
+assert.match(source, /loadSavedGame\(\) \{/);
+assert.match(source, /localStorage\.getItem\('tlc-save-v1'/);
+assert.match(source, /captureCurrentMapObjectStates\(\)/);
+assert.match(source, /GameState\.objectStates\[this\.currentMapId\]/);
+assert.match(source, /applySavedObjectStates\(savedObjectsForMap\)/);
+assert.match(source, /createTouchControls\(\) \{/);
+assert.match(source, /this\.touchKeys\?\.left/);
+assert.match(source, /this\.touchInteract/);
+assert.match(source, /this\.touchInventory/);
+assert.match(source, /if \(escapePressed && !hadOpenPanelBeforeEscape/);
+assert.match(source, /if \(name === 'Your Home'\)/);
+assert.match(source, /GameState\.started = false/);
+assert.match(source, /this\.openMenu\('ending'\)/);
 
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, compass HUD, Workbench rendering/scrolling and reachable map exits.');
