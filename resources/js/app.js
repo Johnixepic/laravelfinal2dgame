@@ -1702,6 +1702,10 @@ class WorldScene extends Phaser.Scene {
                 this.showMessage('Crafting failed: unknown equipment.', 'error');
                 return;
             }
+            if (this.equipment[result.key]) {
+                this.showMessage(`You already have the reusable ${recipe.name}.`, 'info');
+                return;
+            }
         } else {
             this.showMessage('Crafting failed: invalid recipe output.', 'error');
             return;
@@ -1733,7 +1737,8 @@ class WorldScene extends Phaser.Scene {
             const recipe = RECIPES.find(r => r.id === card.getData('recipeId'));
             if (!recipe) continue;
 
-            const canCraft = Object.entries(recipe.ingredients).every(
+            const alreadyOwned = recipe.result.type === 'equipment' && this.equipment[recipe.result.key];
+            const canCraft = !alreadyOwned && Object.entries(recipe.ingredients).every(
                 ([key, amount]) => this.hasItem(key, amount)
             );
 
@@ -1751,7 +1756,7 @@ class WorldScene extends Phaser.Scene {
                 ingredientText.setColor(canCraft ? '#c8dcc0' : '#a0a895');
             }
             if (descText) {
-                descText.setText(`${recipe.desc}\n${canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`);
+                descText.setText(`${recipe.desc}\n${alreadyOwned ? 'ALREADY OWNED' : canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`);
                 descText.setColor(canCraft ? '#a8c0a0' : '#8a927f');
             }
             if (cardBorder) {
@@ -1919,6 +1924,7 @@ class WorldScene extends Phaser.Scene {
         if (kind === 'workbench') {
             // DO008: Mark workbench as discovered
             this.workbenchDiscovered = true;
+            GameState.workbenchDiscovered = true;
 
             this.craftingOpen = true;
             this.craftingPanel.setVisible(true);
