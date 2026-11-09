@@ -188,5 +188,11 @@ assert.match(source, /resourceCandidates\.find/);
 assert.match(source, /resourceCandidates\.push\(\[i, j\]\)/);
 assert.match(source, /GameState\.inventory = Object\.fromEntries\(Object\.keys\(ITEM_DEFS\)\.map/);
 assert.match(source, /this\.scale\.off\('resize', this\.repositionUI, this\)/);
+assert.match(source, /saveGame\\(\\{ silent = false \\} = \\{\\}\\)/);
+assert.match(source, /this\\.time\\.now - \\(this\\.lastAutosaveAt \\?\\? this\\.time\\.now\\) >= 60000/);
+assert.match(source, /this\\.saveGame\\(\\{ silent: true \\}\\)/);
+assert.match(source, /if \\(!silent\\) \\{/);
+assert.match(source, /if \\(!silent\\) this\\.showMessage/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
