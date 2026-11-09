@@ -549,6 +549,8 @@ class WorldScene extends Phaser.Scene {
         this.transitioningMap = false;
         this.interactionWasDown = false;
         this.escapeWasDown = false;
+        this.inventoryWasDown = false;
+        this.eatWasDown = false;
 
         // DO019: Initialize recipe card tracking
         this.recipeCards = [];
