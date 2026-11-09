@@ -60,8 +60,8 @@ assert.match(source, /MAP4: \{ scrap: 1, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 
 // TLC-024: the Workbench mask must cover the panel, not the world origin.
-assert.match(source, /recipeMaskShape\.setPosition\(px, py\)/);
-assert.match(source, /recipeMaskShape\.setVisible\(false\)/);
+assert.match(source, /this\.make\.graphics\(\{ x: px, y: py, add: false \}\)/);
+assert.match(source, /recipeMaskShape\.fillRect\(-185, -95, 370, 205\)/);
 assert.match(source, /recipeScrollArea\.setMask\(recipeMask\)/);
 assert.match(source, /this\.input\.on\('wheel'/);
 assert.match(source, /this\.recipeScrollArea\.setY\(-43 - this\.recipeScrollOffset\)/);
