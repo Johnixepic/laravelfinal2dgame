@@ -1,58 +1,119 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# THE LAST CONNECTION
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A 2D exploration and crafting game built with Phaser.js and Laravel.
 
-## About Laravel
+## Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+You wake up on a small island with nothing but the clothes on your back. Search your home, gather resources, discover a workbench, craft tools, and repair a boat across four stages — then sail to escape.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Genre**: 2D survival/crafting exploration
+**Canvas**: 960x600 (responsive)
+**Maps**: 5 connected island maps with eastward progression
+**Win Condition**: Build a boat through 4 stages, reach the eastern coast (MAP5), and sail away
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Quick Start
 
-## Learning Laravel
+### Prerequisites
+- Node.js 18+
+- PHP 8.1+
+- Composer
+- npm
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+### Install & Build
+```
+cd 2DGame
+composer install
+npm install
+npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Run Development Server
+```
+php artisan serve
+```
+Open http://localhost:8000/game in a browser.
 
-## Contributing
+### Production Build
+```
+npm run build
+php artisan optimize
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Controls
 
-## Code of Conduct
+| Key | Action |
+|-----|--------|
+| WASD / Arrow Keys | Move |
+| E | Interact (search, gather, craft, build boat) |
+| ESC | Close crafting panel |
+| R (after win) | Restart game |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Gameplay
 
-## Security Vulnerabilities
+1. Search your home — find initial supplies (wood, cloth, food)
+2. Explore the island — walk east to discover new maps and resources
+3. Find a workbench — enter the Old Store on MAP2 to discover one
+4. Craft tools — use the workbench to craft a Crude Axe and other items
+5. Gather resources — cut trees for wood, search houses for scrap and rope
+6. Build the boat — visit the boat site on MAP5 and complete all 4 stages:
+   - Stage 1: Hull — 12 wood
+   - Stage 2: Reinforcement — 6 scrap + 4 wood
+   - Stage 3: Rigging — 5 rope
+   - Stage 4: Sail — 6 cloth
+7. Sail away — press E at the completed boat to trigger the ending cinematic
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Maps
+
+| Map | Name | Theme | Key Resources |
+|-----|------|-------|---------------|
+| MAP1 | Home Island | Verdant woodland | Wood, rope, cloth, food |
+| MAP2 | Abandoned Settlement | Desolate gray-brown | Scrap, rope, cloth |
+| MAP3 | Industrial Ruins | Steely gray | Scrap, fasteners, machinery_salvage |
+| MAP4 | Deep Wilderness | Dark forest green | Plant fibers, wood |
+| MAP5 | Coastal Escape | Shoreline green | Driftwood, cloth |
+
+## Project Structure
+
+```
+2DGame/
+  resources/
+    js/
+      app.js              # Main Phaser game (2,184 lines)
+    views/
+      game.blade.php      # Laravel view (header + canvas + footer)
+  public/build/           # Vite compiled assets
+  DDO-*.txt               # Development Order logs (iteration history)
+  DO008_REPORT.md         # Feature-specific reports
+  validate-game.js        # Automated verification script
+```
+
+## Game Architecture
+
+### Core Systems
+- **GameState** — Persistent state across map transitions (inventory, equipment, boatStage, boatBuilt, workbenchDiscovered)
+- **MAPS** — 5 map definitions with terrain colors, exits, and fog margins
+- **ITEM_DEFS** — 12 item definitions with name, limit, description, and category
+- **RECIPES** — Crafting recipes with ingredient requirements and workbench gating
+- **BOAT_STAGES** — 4 boat construction stages with resource costs
+- **LOOT_TABLES** — Per-building loot tables defining what items can be searched
+
+### Coordinate System
+- Isometric projection with TILE_W = 64 and TILE_H = 32
+- Tile positions use {i, j} grid coordinates
+- Pixel-to-tile conversion handled by pixelToTile() / tilePosition()
+
+### State Persistence
+- GameState object persists across map transitions and scene restarts
+- Indoor workbench discovery (workbenchDiscovered) is cross-map persistent
+- Full game reset via restartGame() on win/restart
+
+## Development Notes
+
+- All game logic lives in resources/js/app.js
+- Map definitions, item data, and recipes are top-level constants for easy editing
+- DDO files track the development history; see DDO-021 for the latest architecture summary
+- The game has no audio, no mobile touch controls, and no server-side save (by design for demo scope)
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT

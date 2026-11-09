@@ -25,3 +25,18 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Backups
+*.bak
+
+.env
+.env.*
+!.env.example
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/storage/logs/
+/storage/framework/
+/bootstrap/cache/*.php
+/database/*.sqlite
