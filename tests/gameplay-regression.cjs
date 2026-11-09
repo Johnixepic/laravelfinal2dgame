@@ -80,14 +80,15 @@ assert.equal(
 // TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
 assert.match(source, /width: 1920,\s*height: 1080/);
 assert.match(source, /mode: Phaser\.Scale\.FIT/);
-assert.match(source, /this\.inventoryPanel\.setPosition\(w - 260, 380\)/);
-assert.match(source, /this\.inventoryText\.setPosition\(w - 480, 75\)/);
+assert.match(source, /this\.inventoryPanel\.setPosition\(w - 330, 410\)/);
+assert.match(source, /this\.inventoryText\.setPosition\(w - 550, 105\)/);
 assert.match(source, /this\.inventoryPanel = this\.add\.rectangle\([^\n]+480, 640/);
 assert.match(source, /this\.inventoryPanel[\s\S]*?setDepth\(5000\)/);
 assert.match(source, /this\.inventoryText[\s\S]*?setDepth\(5001\)/);
 assert.match(source, /if \(this\.inventoryOpen\) this\.refreshInventoryUI\(\)/);
 assert.match(source, /if \(escapePressed && this\.inventoryOpen\)/);
 assert.match(source, /this\.messageText\.setPosition\(w \/ 2, 118\)/);
+assert.match(source, /this\.messageHideEvent = this\.time\.delayedCall\(4500/);
 assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
 assert.match(source, /this\.mapLabel = null;/);
 assert.match(source, /this\.mapLabel && this\.mapLabel\.scene === this && this\.mapLabel\.active/);
@@ -174,6 +175,11 @@ assert.match(source, /const profile = MAP_LOOT_PROFILES\[mapId\]/);
 assert.match(source, /kind', 'gatherable'/);
 assert.match(source, /itemKey', itemKey/);
 assert.match(source, /if \(kind === 'gatherable'\)/);
+const houseInteraction = section("        if (kind === 'house') {", "            object.setData('searched', true);");
+assert.ok(houseInteraction.indexOf("object.getData('searched')") < houseInteraction.indexOf("buildingDef?.indoor"), 'Already-searched house feedback must run before indoor entry');
+const treeInteraction = section("        if (kind === 'tree') {", "            object.setData('harvested', true);");
+assert.ok(treeInteraction.indexOf("object.getData('harvested')") < treeInteraction.indexOf("!this.equipment.saw"), 'Already-harvested tree feedback must run before the Saw requirement');
+
 assert.match(source, /const amount = itemKey === 'machinery_salvage' \? 1 : 2/);
 assert.match(source, /object\.setAlpha\(0\.35\)/);
 // TLC-028: every map profile now creates collectible salvage and every salvage family can be processed.
