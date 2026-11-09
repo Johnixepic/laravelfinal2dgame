@@ -1108,15 +1108,26 @@ class WorldScene extends Phaser.Scene {
         // Place region-specific salvage caches from the loot profiles.
         // Fixed tile slots keep resources reachable and deterministic on every run.
         const profile = MAP_LOOT_PROFILES[mapId] || {};
-        const resourceTiles = [[14, 6], [6, 14], [23, 14], [14, 24], [24, 23], [6, 24]];
-        (profile.gatherables || []).forEach((itemKey, index) => {
+        const preferredResourceTiles = [[14, 6], [6, 14], [23, 14], [14, 24], [24, 23], [6, 24]];
+        const resourceCandidates = [...preferredResourceTiles];
+        // If a preferred slot is occupied, scan interior tiles in a stable order.
+        // This guarantees each profile resource a placement instead of silently
+        // deleting a required ingredient because of a building/tree overlap.
+        for (let j = 3; j <= 26; j++) {
+            for (let i = 3; i <= 26; i++) {
+                resourceCandidates.push([i, j]);
+            }
+        }
+        (profile.gatherables || []).forEach(itemKey => {
             if (!ITEM_DEFS[itemKey]) return;
-            const [i, j] = resourceTiles[index % resourceTiles.length];
-            const p = this.tilePosition(i, j);
-            const blocked = this.obstacles.getChildren().some(object =>
-                Phaser.Math.Distance.Between(p.x, p.y - 8, object.x, object.y) < 72
-            );
-            if (blocked) return;
+            const tile = resourceCandidates.find(([i, j]) => {
+                const p = this.tilePosition(i, j);
+                return !this.obstacles.getChildren().some(object =>
+                    Phaser.Math.Distance.Between(p.x, p.y - 8, object.x, object.y) < 72
+                );
+            });
+            if (!tile) return;
+            const p = this.tilePosition(tile[0], tile[1]);
             const cache = this.obstacles.create(p.x, p.y - 8, 'resource_cache');
             cache.setDepth(cache.y);
             cache.refreshBody();
@@ -1683,7 +1694,7 @@ class WorldScene extends Phaser.Scene {
     }
 
     startNewGame() {
-        GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
+        GameState.inventory = Object.fromEntries(Object.keys(ITEM_DEFS).map(key => [key, 0]));
         GameState.equipment = { saw: false, hammer: false, crowbar: false, screwdriver: false };
         GameState.boatStage = 0;
         GameState.boatStagesCompleted = [false, false, false, false];
