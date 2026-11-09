@@ -31,7 +31,7 @@ npm run build
 ```
 php artisan serve
 ```
-Open http://localhost:8000/game in a browser.
+Open http://localhost:8000/ in a browser.
 
 ### Production Build
 ```
@@ -45,7 +45,8 @@ php artisan optimize
 |-----|--------|
 | WASD / Arrow Keys | Move |
 | E | Interact (search, gather, craft, build boat) |
-| ESC | Close crafting panel |
+| I | Toggle inventory side panel |
+| ESC | Close crafting panel / exit indoor mode |
 | R (after win) | Restart game |
 
 ## Gameplay
@@ -53,14 +54,14 @@ php artisan optimize
 1. Search your home — find initial supplies (wood, cloth, food)
 2. Explore the island — walk east to discover new maps and resources
 3. Find a workbench — enter the Old Store on MAP2 to discover one
-4. Craft tools — use the workbench to craft a Crude Axe and other items
-5. Gather resources — cut trees for wood, search houses for scrap and rope
-6. Build the boat — visit the boat site on MAP5 and complete all 4 stages:
+4. Craft tools — use the workbench to craft the reusable Saw, Hammer, Crowbar, and Screwdriver
+5. Gather resources — the Saw is required to cut trees; search buildings across MAP2–MAP4 for guaranteed minimum construction supplies
+6. Build the boat — craft all four tools first, then visit the boat site on MAP5 and complete all 4 stages:
    - Stage 1: Hull — 12 wood
    - Stage 2: Reinforcement — 6 scrap + 4 wood
    - Stage 3: Rigging — 5 rope
    - Stage 4: Sail — 6 cloth
-7. Sail away — press E at the completed boat to trigger the ending cinematic
+7. Sail away — after all four stages are complete, press E again at the boat on MAP5 to trigger the ending cinematic
 
 ## Maps
 
@@ -78,7 +79,7 @@ php artisan optimize
 2DGame/
   resources/
     js/
-      app.js              # Main Phaser game (2,184 lines)
+      app.js              # Main Phaser game
     views/
       game.blade.php      # Laravel view (header + canvas + footer)
   public/build/           # Vite compiled assets
@@ -90,7 +91,7 @@ php artisan optimize
 ## Game Architecture
 
 ### Core Systems
-- **GameState** — Persistent state across map transitions (inventory, equipment, boatStage, boatBuilt, workbenchDiscovered)
+- **GameState** — Persistent state across map transitions (inventory, four reusable tools, boatStage, boatBuilt, workbenchDiscovered)
 - **MAPS** — 5 map definitions with terrain colors, exits, and fog margins
 - **ITEM_DEFS** — 12 item definitions with name, limit, description, and category
 - **RECIPES** — Crafting recipes with ingredient requirements and workbench gating
