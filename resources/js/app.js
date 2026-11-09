@@ -8,7 +8,7 @@ const TILE_H = 32;
 // ============================================================
 const GameState = {
     inventory: { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 },
-    equipment: { axe: false, gatheringTool: false },
+    equipment: { saw: false, hammer: false, crowbar: false, screwdriver: false },
     boatStage: 0,
     boatStagesCompleted: [false, false, false, false],
     boatBuilt: false,
@@ -334,18 +334,36 @@ const BOAT_STAGES = [
 
 const RECIPES = [
     {
-        id: 'crudeAxe',
-        name: 'Crude Axe',
-        result: { type: 'equipment', key: 'axe' },
-        ingredients: { wood: 5, rope: 2 },
-        desc: 'Basic chopping tool. +1 wood from trees.',
+        id: 'saw',
+        name: 'Saw',
+        result: { type: 'equipment', key: 'saw' },
+        ingredients: { wood: 3, scrap: 2 },
+        desc: 'Reusable cutting tool. Required to harvest trees.',
+        workbenchRequired: true,
     },
     {
-        id: 'gatheringTool',
-        name: 'Gathering Tool',
-        result: { type: 'equipment', key: 'gatheringTool' },
-        ingredients: { wood: 4, scrap: 2 },
-        desc: 'Improved gathering. +1 scrap from houses.',
+        id: 'hammer',
+        name: 'Hammer',
+        result: { type: 'equipment', key: 'hammer' },
+        ingredients: { wood: 2, scrap: 2 },
+        desc: 'Reusable construction tool. Required to build the boat.',
+        workbenchRequired: true,
+    },
+    {
+        id: 'crowbar',
+        name: 'Crowbar',
+        result: { type: 'equipment', key: 'crowbar' },
+        ingredients: { wood: 1, scrap: 3 },
+        desc: 'Reusable salvage tool. Required to build the boat.',
+        workbenchRequired: true,
+    },
+    {
+        id: 'screwdriver',
+        name: 'Screwdriver',
+        result: { type: 'equipment', key: 'screwdriver' },
+        ingredients: { wood: 1, scrap: 2 },
+        desc: 'Reusable fastening tool. Required to build the boat.',
+        workbenchRequired: true,
     },
     {
         id: 'boatPlank',
@@ -361,7 +379,6 @@ const RECIPES = [
         ingredients: { scrap: 4, cloth: 2 },
         desc: 'Emergency repairs and sail patches.',
     },
-    // DO009: New recipes requiring workbench
     {
         id: 'plank',
         name: 'Plank',
@@ -1008,9 +1025,10 @@ class WorldScene extends Phaser.Scene {
             D: Phaser.Input.Keyboard.KeyCodes.D,
             E: Phaser.Input.Keyboard.KeyCodes.E,
             ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
+            I: Phaser.Input.Keyboard.KeyCodes.I,
         });
 
-        this.add.text(24, 0, 'WASD / ARROWS: MOVE', {
+        this.add.text(24, 0, 'WASD / ARROWS: MOVE  ·  I: INVENTORY', {
             fontFamily: 'sans-serif',
             fontSize: '12px',
             color: '#ffffff',
@@ -1038,6 +1056,8 @@ class WorldScene extends Phaser.Scene {
         this.equipment = GameState.equipment;
         this.nearbyObject = null;
         this.interactionWasDown = false;
+        this.inventoryOpen = false;
+        this.inventoryWasDown = false;
         this.boatStage = GameState.boatStage;
         this.boatStagesCompleted = GameState.boatStagesCompleted;
         this.boatBuilt = GameState.boatBuilt;
@@ -1058,6 +1078,11 @@ class WorldScene extends Phaser.Scene {
             .setDepth(2000)
             .setVisible(false);
 
+        this.inventoryPanel = this.add.rectangle(24, 112, 240, 420, 0x0f1c12, 0.96)
+            .setScrollFactor(0)
+            .setDepth(999)
+            .setVisible(false);
+
         this.inventoryText = this.add.text(
             24, 112, '',
             {
@@ -1072,7 +1097,8 @@ class WorldScene extends Phaser.Scene {
             }
         )
             .setScrollFactor(0)
-            .setDepth(1000);
+            .setDepth(1000)
+            .setVisible(false);
 
         this.messageText = this.add.text(
             480, 465, '',
@@ -1399,6 +1425,12 @@ class WorldScene extends Phaser.Scene {
             lines.push(`${def.name}: ${count.toString().padStart(2)}/${def.limit}  ${bar}`);
         }
 
+        lines.push('', 'REUSABLE TOOLS');
+        for (const key of ['saw', 'hammer', 'crowbar', 'screwdriver']) {
+            const label = key.charAt(0).toUpperCase() + key.slice(1);
+            lines.push(`${this.equipment[key] ? '✔' : '○'} ${label}`);
+        }
+
         this.inventoryText.setText(lines.join('\n'));
     }
 
@@ -1532,15 +1564,18 @@ class WorldScene extends Phaser.Scene {
         }
 
         if (kind === 'tree') {
+            if (!this.equipment.saw) {
+                this.showMessage('You need a Saw to cut down trees.', 'warning');
+                return;
+            }
+
             if (object.getData('harvested')) {
                 this.showMessage('This tree has already been harvested.');
                 return;
             }
 
             object.setData('harvested', true);
-            let woodAmount = 3;
-            if (this.equipment.axe) woodAmount = 4;
-            this.addItem('wood', woodAmount);
+            this.addItem('wood', 3);
         }
     }
 
@@ -1564,6 +1599,14 @@ class WorldScene extends Phaser.Scene {
 
     buildBoatStage() {
         if (this.boatBuilt || this.boatStage >= BOAT_STAGES.length) return;
+
+        const requiredTools = ['saw', 'hammer', 'crowbar', 'screwdriver'];
+        const missingTools = requiredTools.filter(key => !this.equipment[key]);
+        if (missingTools.length > 0) {
+            const labels = missingTools.map(key => key.charAt(0).toUpperCase() + key.slice(1));
+            this.showMessage(`Required tools: ${labels.join(', ')}. Craft them at the workbench.`, 'warning');
+            return;
+        }
 
         const stage = BOAT_STAGES[this.boatStage];
         const canBuild = Object.entries(stage.ingredients).every(
@@ -1725,7 +1768,7 @@ led to this moment.`, {
     restartGame() {
         // Reset GameState
         GameState.inventory = { wood: 0, scrap: 0, rope: 0, cloth: 0, food: 0 };
-        GameState.equipment = { axe: false, gatheringTool: false };
+        GameState.equipment = { saw: false, hammer: false, crowbar: false, screwdriver: false };
         GameState.boatStage = 0;
         GameState.boatStagesCompleted = [false, false, false, false];
         GameState.boatBuilt = false;
@@ -1940,6 +1983,14 @@ led to this moment.`, {
 
         const interactionDown = this.keys.E.isDown;
         const escapeDown = this.keys.ESC.isDown;
+        const inventoryDown = this.keys.I.isDown;
+        const inventoryPressed = inventoryDown && !this.inventoryWasDown;
+
+        if (inventoryPressed) {
+            this.inventoryOpen = !this.inventoryOpen;
+            this.inventoryPanel.setVisible(this.inventoryOpen);
+            this.inventoryText.setVisible(this.inventoryOpen);
+        }
         const interactionPressed = interactionDown && !this.interactionWasDown;
         const escapePressed = escapeDown && !this.escapeWasDown;
 
@@ -2018,6 +2069,7 @@ led to this moment.`, {
 
             this.interactionWasDown = interactionDown;
             this.escapeWasDown = escapeDown;
+            this.inventoryWasDown = inventoryDown;
             return;
         }
 
@@ -2111,6 +2163,7 @@ led to this moment.`, {
 
         this.interactionWasDown = interactionDown;
         this.escapeWasDown = escapeDown;
+        this.inventoryWasDown = inventoryDown;
 
         let dx = 0;
         let dy = 0;
