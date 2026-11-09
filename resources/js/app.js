@@ -823,6 +823,7 @@ class WorldScene extends Phaser.Scene {
 
     createBoatTextures() {
         function drawToBitmap(drawFn, key, w, h) {
+            if (this.textures.exists(key)) return this.textures.get(key);
             const c = document.createElement('canvas');
             c.width = w;
             c.height = h;
