@@ -121,7 +121,7 @@
             <h1>THE LAST CONNECTION</h1>
             <p>A survival story begins at home.</p>
         </div>
-        <div class="game-status">FINAL BUILD<br>v1.0 — THE LAST CONNECTION</div>
+        <div class="game-status">THE LAST CONNECTION<br>Explore · Craft · Escape</div>
     </header>
 
     <main>
@@ -129,7 +129,7 @@
             <div id="game-container"></div>
             <div class="game-footer">
                 <span>WASD / Arrow keys — Move</span>
-                <span>E — Interact  ·  I — Inventory  ·  ESC — Close panels</span>
+                <span>E — Interact  ·  I — Inventory  ·  ESC — Pause / close panels</span>
                 <span>5-map journey: Home Island → Abandoned Settlement → Industrial Ruins → Deep Wilderness → Coastal Escape (build boat here)</span>
             </div>
         </section>
