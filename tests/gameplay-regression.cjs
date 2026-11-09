@@ -21,6 +21,9 @@ assert.match(source, /this\.indoorGrid\.add\(this\.indoorDoor\)/);
 assert.match(source, /this\.indoorPlayerSprite\.setPosition\(clampedX, clampedY\)/);
 assert.match(source, /this\.indoorPrompt\.setText/);
 assert.match(source, /this\.currentIndoorHouse = null/);
+assert.match(source, /I: Phaser\.Input\.Keyboard\.KeyCodes\.I/);
+assert.match(source, /const inventoryPressed = inventoryDown && !this\.inventoryWasDown/);
+assert.match(source, /this\.inventoryText\.setVisible\(this\.inventoryOpen\)/);
 
 // Indoor update handling must run before outdoor object interactions and transitions.
 const update = section('    update(time, delta = 16) {', '\n}\n\n// ============================================================\n// GAME INITIALIZATION');
@@ -48,6 +51,13 @@ for (const key of ['boatPlank', 'repairKit', 'plank', 'sailcloth']) {
 }
 assert.match(source, /outputDef\.limit/);
 assert.match(source, /recipe\.workbenchRequired && !this\.workbenchDiscovered/);
+assert.match(source, /const requiredTools = \['saw', 'hammer', 'crowbar', 'screwdriver'\]/);
+assert.match(source, /if \(!this\.equipment\.saw\)/);
+assert.match(source, /GameState\.equipment = \{ saw: false, hammer: false, crowbar: false, screwdriver: false \}/);
+assert.match(source, /MAP2: \{ wood: 1, scrap: 1, rope: 1, cloth: 1 \}/);
+assert.match(source, /MAP3: \{ scrap: 2, rope: 1, cloth: 1 \}/);
+assert.match(source, /MAP4: \{ scrap: 1, rope: 1, cloth: 1 \}/);
+assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 
 // Boat stages are sequential; sailing requires a deliberate interaction on MAP5.
 assert.match(source, /const BOAT_STAGES = \[\s*\{ id: 'hull'/);
