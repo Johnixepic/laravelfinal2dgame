@@ -1237,13 +1237,13 @@ class WorldScene extends Phaser.Scene {
             .setVisible(false);
 
         // Inventory is a dedicated viewport-fixed panel, above the workbench layer.
-        this.inventoryPanel = this.add.rectangle(this.scale.width - 330, 410, 480, 640, 0x0b1710, 0.98)
+        this.inventoryPanel = this.add.rectangle(this.scale.width - 400, 440, 480, 640, 0x0b1710, 0.98)
             .setScrollFactor(0)
             .setDepth(5000)
             .setVisible(false);
 
         this.inventoryText = this.add.text(
-            this.scale.width - 550, 105, '',
+            this.scale.width - 620, 135, '',
             {
                 fontFamily: 'sans-serif',
                 fontSize: '14px',
@@ -2194,6 +2194,7 @@ class WorldScene extends Phaser.Scene {
             }
 
             object.setData('searched', true);
+            object.setAlpha(0.45);
 
             const table = LOOT_TABLES[name] || LOOT_TABLES['Abandoned House'];
             const loot = { ...Phaser.Math.RND.pick(table) };
@@ -2263,13 +2264,15 @@ class WorldScene extends Phaser.Scene {
             }
 
             object.setData('harvested', true);
+            object.setAlpha(0.35);
             this.addItem('wood', 3);
+            this.showMessage('Tree harvested. This tree has been depleted.', 'success');
             return;
         }
 
         if (kind === 'gatherable') {
             if (object.getData('harvested')) {
-                this.showMessage(name + ' has already been collected.');
+                this.showMessage(name + ' has already been collected.', 'warning');
                 return;
             }
 
@@ -2748,10 +2751,10 @@ THE END`, {
         const h = this.scale.height;
 
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 330, 410);
+            this.inventoryPanel.setPosition(w - 400, 440);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 550, 105);
+            this.inventoryText.setPosition(w - 620, 135);
             this.inventoryText.setWordWrapWidth(420, true);
         }
 
