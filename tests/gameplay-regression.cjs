@@ -76,6 +76,10 @@ assert.match(source, /updateCompass\(dx, dy\) \{/);
 assert.match(source, /root\.setScrollFactor\(0\)/);
 assert.match(source, /this\.compassRoot\.setPosition\(w - 48, 116\)/);
 assert.match(source, /this\.compassNeedle\.setRotation\(rotations\[this\.facingDirection\]\)/);
+assert.match(source, /this\.scale\.on\('resize', this\.repositionUI, this\)/);
+assert.match(source, /this\.updateCompass\(idx, idy\)/);
+assert.match(source, /Scroll to browse/);
+
 
 // TLC-024: visible gates and transitions share the exact exit tile coordinates.
 assert.match(source, /Draw each exit gate from the same tile coordinates used by transitions/);
