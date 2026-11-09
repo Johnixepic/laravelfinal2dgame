@@ -65,7 +65,7 @@ assert.match(source, /recipeMaskShape\.fillRect\(-185, -95, 370, 205\)/);
 assert.match(source, /recipeScrollArea\.setMask\(recipeMask\)/);
 assert.match(source, /this\.input\.on\('wheel'/);
 assert.match(source, /this\.recipeScrollArea\.setY\(-43 - this\.recipeScrollOffset\)/);
-assert.match(source, /this\.getItem\(k\)\/\$\{a\}/);
+assert.match(source, /\$\{ITEM_DEFS\[k\]\.name\}: \$\{this\.getItem\(k\)\}\/\$\{a\}/);
 assert.match(source, /READY TO CRAFT/);
 assert.match(source, /MISSING MATERIALS/);
 
