@@ -90,14 +90,10 @@
             overflow: hidden;
         }
 
-        /* The canvas and Phaser's scale manager must share the exact same
-           displayed rectangle; otherwise pointer hit-testing drifts. */
+        /* Let Phaser's FIT scale manager own the canvas dimensions.
+           Overriding them with CSS percentages desynchronizes pointer coordinates. */
         #game-container canvas {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
-            max-width: none;
-            max-height: none;
             touch-action: none;
         }
 
