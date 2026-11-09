@@ -14,6 +14,7 @@ const GameState = {
     boatBuilt: false,
     workbenchDiscovered: false,
     started: false,
+    objectStates: {},
 };
 
 // ============================================================
@@ -500,7 +501,8 @@ class WorldScene extends Phaser.Scene {
         this.drawMap();
         this.createTextures();
         this.createObstacles(startMapId);
-        if (data?.objectStates) this.applySavedObjectStates(data.objectStates);
+        const savedObjectsForMap = data?.objectStates?.[startMapId] || GameState.objectStates?.[startMapId] || [];
+        if (savedObjectsForMap.length) this.applySavedObjectStates(savedObjectsForMap);
         this.createPlayer(startTile || mapDef.landmarks[0]?.tile || { i: 13, j: 13 });
         this.createControls();
         this.createInteractionSystem();
@@ -1463,6 +1465,7 @@ class WorldScene extends Phaser.Scene {
         GameState.boatStagesCompleted = [false, false, false, false];
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
+        GameState.objectStates = {};
         GameState.started = true;
         localStorage.removeItem('tlc-save-v1');
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
@@ -1470,12 +1473,8 @@ class WorldScene extends Phaser.Scene {
 
     saveGame() {
         const playerTile = this.playerTile();
-        const objectStates = this.obstacles.getChildren().map(object => ({
-            name: object.getData('name'),
-            kind: object.getData('kind'),
-            searched: Boolean(object.getData('searched')),
-            harvested: Boolean(object.getData('harvested')),
-        }));
+        const objectStates = this.captureCurrentMapObjectStates();
+        GameState.objectStates[this.currentMapId] = objectStates;
         const save = {
             version: 1,
             savedAt: new Date().toISOString(),
@@ -1487,7 +1486,7 @@ class WorldScene extends Phaser.Scene {
             boatStagesCompleted: [...this.boatStagesCompleted],
             boatBuilt: this.boatBuilt,
             workbenchDiscovered: this.workbenchDiscovered,
-            objectStates,
+            objectStates: { ...GameState.objectStates },
         };
         try {
             localStorage.setItem('tlc-save-v1', JSON.stringify(save));
@@ -1528,7 +1527,7 @@ class WorldScene extends Phaser.Scene {
         this.scene.start('WorldScene', {
             startMapId: save.mapId,
             startTile: save.playerTile,
-            objectStates: save.objectStates || [],
+            objectStates: save.objectStates || {},
         });
         return true;
     }
@@ -1536,6 +1535,15 @@ class WorldScene extends Phaser.Scene {
     returnToTitle() {
         GameState.started = false;
         this.scene.restart({ showTitle: true });
+    }
+
+    captureCurrentMapObjectStates() {
+        return this.obstacles.getChildren().map(object => ({
+            name: object.getData('name'),
+            kind: object.getData('kind'),
+            searched: Boolean(object.getData('searched')),
+            harvested: Boolean(object.getData('harvested')),
+        }));
     }
 
     applySavedObjectStates(states = []) {
@@ -2047,12 +2055,14 @@ led to this moment.`, {
         }).setOrigin(0.5);
         overlay.add(body);
 
-        const credits = this.add.text(0, 170, 'Press R to play again', {
+        const credits = this.add.text(0, 170, 'Press R to play again  ·  Click here for more options', {
             fontFamily: 'sans-serif',
             fontSize: '14px',
             color: '#5a7a52',
         }).setOrigin(0.5);
         overlay.add(credits);
+        credits.setInteractive({ useHandCursor: true });
+        credits.on('pointerdown', () => this.openMenu('ending'));
 
         // Fade in overlay
         this.tweens.add({
@@ -2275,6 +2285,7 @@ led to this moment.`, {
         GameState.boatStagesCompleted = this.boatStagesCompleted;
         GameState.boatBuilt = this.boatBuilt;
         GameState.workbenchDiscovered = this.workbenchDiscovered || false;
+        GameState.objectStates[this.currentMapId] = this.captureCurrentMapObjectStates();
 
         // Close crafting panel if open
         if (this.craftingOpen) {
@@ -2391,6 +2402,8 @@ led to this moment.`, {
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - 72, 72);
         }
+        if (this.touchActionRoot) this.touchActionRoot.setPosition(w - 150, h - 155);
+        if (this.touchControlsRoot) this.touchControlsRoot.setPosition(150, h - 170);
         if (this.craftingPanel) {
             const panelH = 700;
             const panelY = h / 2;
@@ -2511,7 +2524,7 @@ led to this moment.`, {
             this.inventoryText.setVisible(false);
         }
         if (escapePressed && !this.craftingOpen && !this.inventoryOpen) {
-            this.openMenu('pause');
+            this.openMenu(this.won ? 'ending' : 'pause');
             this.interactionWasDown = interactionDown;
             this.escapeWasDown = escapeDown;
             this.inventoryWasDown = inventoryDown;
