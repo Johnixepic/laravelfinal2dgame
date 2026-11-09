@@ -3109,6 +3109,5 @@ if (gameContainer) {
     canvasResizeObserver.observe(gameContainer);
     game.events.on('ready', refreshCanvasScale);
     game.events.once('destroy', () => canvasResizeObserver.disconnect());
-    window.addEventListener('resize', refreshCanvasScale);
 } else {
 }
