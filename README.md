@@ -80,7 +80,7 @@ php artisan optimize
 - The world cycles through daylight and night. Night is currently safe: there are no hostile creature encounters or combat in this MVP.
 - Hunger decreases gradually while playing. Press F (or tap the F touch button) to consume one Food and restore hunger; low hunger reduces movement speed but never blocks the ending.
 - Short synthesized sound cues play for pickups, crafting, map transitions, eating, and victory. Sound can be toggled from the pause menu.
-- Touch devices receive on-screen movement, interact, inventory, and eat controls.
+- Touch devices receive on-screen movement, interact, inventory, and eat controls. The workbench recipe list supports swipe scrolling; tapping a recipe crafts it.
 
 ## Menus and saved games
 
