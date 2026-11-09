@@ -314,7 +314,7 @@ const ITEM_DEFS = {
     scrap: { name: 'Scrap Metal', limit: 20, desc: 'Tool components and upgrades.', category: 'raw-material' },
     rope: { name: 'Rope', limit: 10, desc: 'Crafting and boat construction.', category: 'raw-material' },
     cloth: { name: 'Cloth', limit: 10, desc: 'Sails and repairs.', category: 'raw-material' },
-    food: { name: 'Food', limit: 10, desc: 'Future survival mechanic.', category: 'consumable' },
+    food: { name: 'Food', limit: 10, desc: 'Restores hunger when eaten with F.', category: 'consumable' },
     branches: { name: 'Branches', limit: 15, desc: 'Small sticks for kindling.', category: 'gatherable' },
     driftwood: { name: 'Driftwood', limit: 15, desc: 'Weathered wood from the shore.', category: 'gatherable' },
     plant_materials: { name: 'Plant Fibers', limit: 15, desc: 'Useful for binding and rope.', category: 'gatherable' },
@@ -2417,6 +2417,7 @@ led to this moment.`, {
         GameState.boatStagesCompleted = this.boatStagesCompleted;
         GameState.boatBuilt = this.boatBuilt;
         GameState.workbenchDiscovered = this.workbenchDiscovered || false;
+        GameState.survival = { ...this.survival };
         GameState.objectStates[this.currentMapId] = this.captureCurrentMapObjectStates();
 
         // Close crafting panel if open
