@@ -116,7 +116,7 @@ assert.match(source, /openMenu\(mode = 'pause'\)/);
 assert.match(source, /startNewGame\(\) \{/);
 assert.match(source, /confirmNewGame\(\) \{/);
 assert.match(source, /mode === 'confirm-new'/);
-assert.match(source, /saveGame\(\) \{/);
+assert.match(source, /saveGame\(\{ silent = false \} = \{\}\) \{/);
 assert.match(source, /localStorage\.setItem\('tlc-save-v1'/);
 assert.match(source, /loadSavedGame\(\) \{/);
 assert.match(source, /localStorage\.getItem\('tlc-save-v1'/);
