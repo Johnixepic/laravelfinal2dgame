@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#18343b">
     <title>THE LAST CONNECTION</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -16,6 +16,7 @@
             min-height: 0;
             margin: 0;
             overflow: hidden;
+            overscroll-behavior: none;
             background: #101b1d;
             color: #edf3e9;
             font-family: Arial, sans-serif;
@@ -24,6 +25,8 @@
         body {
             display: flex;
             flex-direction: column;
+            height: 100dvh;
+            touch-action: none;
         }
 
         .game-header {
@@ -114,10 +117,34 @@
             font-size: 12px;
         }
 
-        @media (max-width: 600px) {
-            .game-header { padding: 8px 12px; }
-            .game-header h1 { font-size: 14px; }
-            .game-footer { padding: 6px 10px; font-size: 10px; }
+        @media (max-width: 760px), (max-height: 620px) {
+            .game-header {
+                flex: 0 0 auto;
+                min-height: 38px;
+                padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+                gap: 8px;
+            }
+            .game-header h1 { font-size: 12px; letter-spacing: 1px; }
+            .game-header p, .game-status, .game-footer { display: none; }
+            main {
+                flex: 1 1 auto;
+                min-height: 0;
+                padding: 0 0 env(safe-area-inset-bottom);
+            }
+            .game-frame { align-items: stretch; justify-content: stretch; }
+            #game-container {
+                flex: 1 1 auto;
+                width: 100%;
+                height: 100%;
+                max-height: none;
+                aspect-ratio: auto;
+            }
+            #game-container canvas { width: 100%; height: 100%; }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .game-header { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+            .game-header h1 { font-size: 11px; }
         }
     </style>
 </head>
