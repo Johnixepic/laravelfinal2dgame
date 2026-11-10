@@ -1373,6 +1373,7 @@ class WorldScene extends Phaser.Scene {
                 align: 'center',
             }
         ).setOrigin(0.5);
+        this.workbenchHintText = panelHint;
 
         let cardY = 0;
 
@@ -1555,7 +1556,15 @@ class WorldScene extends Phaser.Scene {
         this.survival.day = day;
         this.survival.isNight = isNight;
         this.nightOverlay?.setVisible(isNight);
-        this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
+        if (this.isTouchLayout) {
+            this.survivalText.setFontSize(11);
+            this.survivalText.setWordWrapWidth(Math.max(130, Math.min(180, this.scale.width - 105)), true);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')} · ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}\nHUNGER ${Math.round(this.survival.hunger)}%`);
+        } else {
+            this.survivalText.setFontSize(13);
+            this.survivalText.setWordWrapWidth(520, true);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
+        }
     }
 
     eatFood() {
@@ -1681,8 +1690,16 @@ class WorldScene extends Phaser.Scene {
                     ['MAIN MENU', () => this.returnToTitle()],
                 ];
 
-        const buttonGap = compact ? Math.min(62, Math.max(48, (h - 190) / Math.max(1, buttons.length - 1))) : 76;
-        const buttonStartY = compact ? -((buttons.length - 1) * buttonGap) / 2 : -95;
+        const buttonAreaTop = -h / 2 + 120;
+        const buttonAreaBottom = h / 2 - 64;
+        const compactAvailable = Math.max(96, buttonAreaBottom - buttonAreaTop);
+        const buttonGap = compact
+            ? Math.min(62, Math.max(40, compactAvailable / Math.max(1, buttons.length - 1)))
+            : 76;
+        const compactUsed = buttonGap * Math.max(0, buttons.length - 1);
+        const buttonStartY = compact
+            ? buttonAreaTop + Math.max(0, (compactAvailable - compactUsed) / 2)
+            : -95;
         const buttonWidth = compact ? Math.min(520, Math.max(220, w - 36)) : 420;
         const buttonHeight = compact ? 44 : 54;
         buttons.forEach(([label, action], index) => {
@@ -1704,13 +1721,14 @@ class WorldScene extends Phaser.Scene {
         try { saveExists = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { saveExists = false; }
         if (mode === 'title' && !saveExists) {
             const lastButtonY = buttonStartY + (buttons.length - 1) * buttonGap;
-            const note = this.add.text(0, compact ? lastButtonY + 40 : 165, 'No saved game found. Start a new journey.', {
+            const note = this.add.text(0, compact ? Math.min(lastButtonY + 38, buttonAreaBottom + 12) : 165, 'No saved game found. Start a new journey.', {
                 fontFamily: 'sans-serif', fontSize: compact ? '10px' : '13px', color: '#8c9d87',
+                align: 'center', wordWrap: { width: Math.max(220, w - 40) },
             }).setOrigin(0.5);
             overlay.add(note);
         }
         const footerY = compact ? h / 2 - 18 : 245;
-        const footer = this.add.text(0, footerY, compact ? 'Touch controls available  ·  Tap buttons to play' : 'WASD / Arrows to move  ·  E interact  ·  I inventory  ·  ESC pause',
+        const footer = this.add.text(0, footerY, compact ? 'Touch controls · Landscape recommended' : 'WASD / Arrows to move  ·  E interact  ·  I inventory  ·  ESC pause',
             { fontFamily: 'sans-serif', fontSize: compact ? '10px' : '12px', color: '#71866f', align: 'center', wordWrap: { width: Math.max(220, w - 32) } }
         ).setOrigin(0.5);
         overlay.add(footer);
@@ -1726,9 +1744,10 @@ class WorldScene extends Phaser.Scene {
 
     showMenuNotice(message) {
         if (!this.menuOverlay) return;
-        const notice = this.add.text(0, 195, message, {
-            fontFamily: 'sans-serif', fontSize: '13px', color: '#ffe08a',
-            align: 'center', wordWrap: { width: 600 },
+        const compact = this.isTouchLayout || this.scale.width < 760 || this.scale.height < 680;
+        const notice = this.add.text(0, compact ? this.scale.height / 2 - 48 : 195, message, {
+            fontFamily: 'sans-serif', fontSize: compact ? '11px' : '13px', color: '#ffe08a',
+            align: 'center', wordWrap: { width: Math.max(220, this.scale.width - 40) },
         }).setOrigin(0.5);
         this.menuOverlay.add(notice);
     }
@@ -1946,11 +1965,18 @@ class WorldScene extends Phaser.Scene {
         inventory.on('pointerout', () => this.touchInventory = false);
         const pause = this.add.circle(0, -78, 27, 0x4b3430, 0.94).setStrokeStyle(2, 0xd7a69a).setInteractive();
         const pauseLabel = this.add.text(0, -78, 'Ⅱ', { fontSize: '19px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        const fullscreen = this.add.circle(0, -150, 24, 0x263d4c, 0.92).setStrokeStyle(2, 0xb4c8d2).setInteractive();
+        const fullscreenLabel = this.add.text(0, -150, '⛶', { fontSize: '20px', color: '#fff' }).setOrigin(0.5);
+        fullscreen.on('pointerdown', () => {
+            if (this.scale.isFullscreen) this.scale.stopFullscreen();
+            else if (this.scale.fullscreenTarget) this.scale.startFullscreen();
+            else this.showMessage('Fullscreen is not supported by this browser.', 'warning');
+        });
         pause.on('pointerdown', () => this.touchPause = true);
         pause.on('pointerup', () => this.touchPause = false);
         pause.on('pointerupoutside', () => this.touchPause = false);
         pause.on('pointerout', () => this.touchPause = false);
-        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel, pause, pauseLabel]);
+        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel, pause, pauseLabel, fullscreen, fullscreenLabel]);
         this.isTouchLayout = Boolean(this.sys.game.device.input.touch || (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) || this.scale.width < 760);
         root.setVisible(this.isTouchLayout);
         actionRoot.setVisible(this.isTouchLayout);
@@ -2594,7 +2620,25 @@ THE END`, {
             }
         }
 
-        this.boatText.setText(lines.join('\n'));
+        if (this.isTouchLayout) {
+            const stage = BOAT_STAGES[this.boatStage];
+            const compactLines = this.boatBuilt
+                ? ['BOAT READY', 'Reach the final shore and tap INTERACT to sail.']
+                : [
+                    `BOAT ${this.boatStage + 1}/${BOAT_STAGES.length}: ${stage.name}`,
+                    ...Object.entries(stage.ingredients).map(([key, amount]) =>
+                        `${ITEM_DEFS[key].name}: ${this.inventory[key] || 0}/${amount}`
+                    ),
+                    'Gather materials to continue.',
+                ];
+            this.boatText.setText(compactLines.join('\n'));
+            this.boatText.setFontSize(10);
+            this.boatText.setWordWrapWidth(Math.max(125, Math.min(185, this.scale.width - 105)), true);
+        } else {
+            this.boatText.setText(lines.join('\n'));
+            this.boatText.setFontSize(12);
+            this.boatText.setWordWrapWidth(220, true);
+        }
     }
 
     // DO018: Contextual hints based on game state
@@ -2832,29 +2876,46 @@ THE END`, {
             this.boatPanel.setPosition(24, h - 180);
         }
         if (this.boatText) {
-            this.boatText.setPosition(24, 24);
+            this.boatText.setPosition(compact ? 12 : 24, compact ? 66 : 24);
+            this.refreshBoatUI();
         }
         if (this.interactionPrompt) {
-            this.interactionPrompt.setPosition(w / 2, h - 120);
+            this.interactionPrompt.setPosition(w / 2, h - (compact ? 126 : 120));
+            this.interactionPrompt.setFontSize(compact ? 12 : 15);
+            this.interactionPrompt.setWordWrapWidth(Math.max(180, w - 150), true);
         }
         if (this.hintTextObj) {
-            this.hintTextObj.setPosition(w / 2, h - 24);
+            this.hintTextObj.setPosition(w / 2, h - 20);
+            this.hintTextObj.setFontSize(compact ? 10 : 12);
+            this.hintTextObj.setWordWrapWidth(Math.max(180, w - 150), true);
         }
         if (this.indoorPrompt) {
-            this.indoorPrompt.setPosition(w / 2, h - 90);
+            this.indoorPrompt.setPosition(w / 2, h - (compact ? 92 : 90));
+            this.indoorPrompt.setFontSize(compact ? 12 : 16);
+            this.indoorPrompt.setWordWrapWidth(Math.max(180, w - 48), true);
         }
 
         if (this.nightOverlay) this.nightOverlay.setPosition(w / 2, h / 2).setSize(w, h);
-        if (this.survivalText) this.survivalText.setPosition(24, 98);
+        if (this.survivalText) {
+            this.survivalText.setPosition(compact ? 12 : 24, compact ? 12 : 98);
+            this.refreshSurvivalUI();
+        }
         if (this.messageText) {
-            this.messageText.setPosition(w / 2, 118);
-            this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, w - 48)), true);
+            this.messageText.setPosition(w / 2, compact ? Math.max(112, h * 0.18) : 118);
+            this.messageText.setFontSize(compact ? 13 : 16);
+            this.messageText.setWordWrapWidth(Math.max(180, Math.min(compact ? 360 : 760, w - 40)), true);
         }
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - (compact ? 48 : 72), compact ? 48 : 72).setScale(compact ? 0.78 : 1);
         }
-        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(250, w - 48), h - 120);
+        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(220, w - 48), h - 120);
         if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(78, w * 0.23)), h - 110);
+        if (this.workbenchHintText) {
+            this.workbenchHintText.setText(this.isTouchLayout
+                ? 'Swipe to browse  ·  Tap a recipe  ·  Pause to close'
+                : 'Scroll to browse  ·  Click a recipe to craft  ·  ESC to close');
+            this.workbenchHintText.setFontSize(this.isTouchLayout ? 13 : 14);
+        }
         if (this.craftingPanel) {
             const panelScale = Math.min(1, (w - 20) / 640, (h - 20) / 700);
             const panelY = h / 2;
