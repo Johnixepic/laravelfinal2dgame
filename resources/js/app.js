@@ -2807,6 +2807,15 @@ THE END`, {
     repositionUI() {
         const w = this.scale.width;
         const h = this.scale.height;
+        this.isTouchLayout = Boolean(
+            this.sys.game.device.input.touch ||
+            (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) ||
+            w < 760
+        );
+        if (!this.menuOpen) {
+            this.touchControlsRoot?.setVisible(this.isTouchLayout);
+            this.touchActionRoot?.setVisible(this.isTouchLayout);
+        }
 
         const compact = w < 760 || h < 700;
         const inventoryScale = compact ? Math.min(1, (w - 24) / 480, (h - 24) / 640) : 1;
@@ -2844,7 +2853,7 @@ THE END`, {
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - 72, 72);
         }
-        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(88, w - 82), h - 120);
+        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(250, w - 48), h - 120);
         if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(78, w * 0.23)), h - 110);
         if (this.craftingPanel) {
             const panelScale = Math.min(1, (w - 20) / 640, (h - 20) / 700);
