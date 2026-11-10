@@ -2232,6 +2232,49 @@ class WorldScene extends Phaser.Scene {
         return nearest;
     }
 
+    // Short, proximity-based explanations shown only while an object is in reach.
+    getNearbyHelpTip(object) {
+        if (!object) return '';
+        const kind = object.getData('kind');
+        const name = object.getData('name') || 'Object';
+
+        if (kind === 'tree') {
+            return object.getData('harvested')
+                ? 'Nothing left here. Explore another area for resources.'
+                : this.equipment.saw
+                    ? 'You have a Saw. Interact to harvest wood.'
+                    : 'Trees need a Saw. Search buildings and craft one at a workbench.';
+        }
+        if (kind === 'workbench') {
+            return this.workbenchDiscovered
+                ? 'Open the workbench to craft tools and process materials.'
+                : 'Discover this workbench to unlock crafting.';
+        }
+        if (kind === 'boatSite') {
+            if (this.boatBuilt) return 'Your boat is ready. Interact again to sail away.';
+            const stage = BOAT_STAGES[this.boatStage];
+            if (!stage) return 'Finish preparing the boat to escape the island.';
+            const requiredTools = ['saw', 'hammer', 'crowbar', 'screwdriver'];
+            const missingTools = requiredTools.filter(key => !this.equipment[key]);
+            return missingTools.length
+                ? `Boat work needs tools: ${missingTools.map(key => key[0].toUpperCase() + key.slice(1)).join(', ')}.`
+                : `Next: ${stage.name}. Gather the listed materials, then interact to build.`;
+        }
+        if (kind === 'house') {
+            return object.getData('searched')
+                ? 'This place has already been searched. Try another building.'
+                : 'Search buildings for supplies. Some buildings contain places to explore.';
+        }
+        if (kind === 'gatherable') {
+            const itemKey = object.getData('itemKey');
+            const itemName = ITEM_DEFS[itemKey]?.name || name;
+            return object.getData('collected')
+                ? 'Already collected. Look for more supplies nearby.'
+                : `Collect ${itemName} here. Interact to pick it up.`;
+        }
+        return '';
+    }
+
     // Convert player world position back to tile coords
     playerTile() {
         const px = this.player.x - 960;
@@ -3085,27 +3128,34 @@ THE END`, {
             const kind = this.nearbyObject.getData('kind');
             const name = this.nearbyObject.getData('name') || 'Object';
 
+            const actionKey = this.isTouchLayout ? 'TAP' : 'E';
             if (kind === 'workbench') {
-                this.interactionPrompt.setText(`E — Craft items: ${name}`);
+                this.interactionPrompt.setText(`${actionKey} — Craft items: ${name}`);
             } else if (kind === 'boatSite') {
                 if (this.boatBuilt) {
-                    this.interactionPrompt.setText('E — Sail away');
+                    this.interactionPrompt.setText(`${actionKey} — Sail away`);
                 } else {
                     const stage = BOAT_STAGES[this.boatStage];
-                    this.interactionPrompt.setText(`E — Build ${stage.name}: ${name}`);
+                    this.interactionPrompt.setText(stage
+                        ? `${actionKey} — Build ${stage.name}: ${name}`
+                        : `${name} — Ready`);
                 }
             } else {
                 const alreadyUsed = kind === 'house'
                     ? this.nearbyObject.getData('searched')
-                    : this.nearbyObject.getData('harvested');
+                    : kind === 'tree'
+                        ? this.nearbyObject.getData('harvested')
+                        : this.nearbyObject.getData('collected');
                 const action = kind === 'house'
                     ? (alreadyUsed ? 'Already searched' : 'Search')
                     : (alreadyUsed ? 'Already collected' : (kind === 'gatherable' ? 'Gather' : 'Gather wood'));
                 this.interactionPrompt.setText(
-                    alreadyUsed ? `${name} — ${action}` : `E — ${action}: ${name}`
+                    alreadyUsed ? `${name} — ${action}` : `${actionKey} — ${action}: ${name}`
                 );
             }
 
+            const helpTip = this.getNearbyHelpTip(this.nearbyObject);
+            if (helpTip) this.interactionPrompt.setText(`${this.interactionPrompt.text}\\n${helpTip}`);
             this.interactionPrompt.setVisible(true);
         } else {
             this.interactionPrompt.setVisible(false);
