@@ -2268,7 +2268,7 @@ class WorldScene extends Phaser.Scene {
         if (kind === 'gatherable') {
             const itemKey = object.getData('itemKey');
             const itemName = ITEM_DEFS[itemKey]?.name || name;
-            return object.getData('collected')
+            return object.getData('harvested')
                 ? 'Already collected. Look for more supplies nearby.'
                 : `Collect ${itemName} here. Interact to pick it up.`;
         }
@@ -3145,7 +3145,7 @@ THE END`, {
                     ? this.nearbyObject.getData('searched')
                     : kind === 'tree'
                         ? this.nearbyObject.getData('harvested')
-                        : this.nearbyObject.getData('collected');
+                        : this.nearbyObject.getData('harvested');
                 const action = kind === 'house'
                     ? (alreadyUsed ? 'Already searched' : 'Search')
                     : (alreadyUsed ? 'Already collected' : (kind === 'gatherable' ? 'Gather' : 'Gather wood'));
