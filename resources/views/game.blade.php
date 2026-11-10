@@ -117,7 +117,7 @@
             font-size: 12px;
         }
 
-        @media (max-width: 760px), (max-height: 620px) {
+        @media (max-width: 900px), (max-height: 620px), (pointer: coarse) {
             .game-header {
                 flex: 0 0 auto;
                 min-height: 38px;
