@@ -79,7 +79,14 @@ assert.equal(
 );
 // TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
 assert.match(source, /width: 1920,\s*height: 1080/);
-assert.match(source, /mode: Phaser\.Scale\.FIT/);
+assert.match(source, /mode: Phaser\.Scale\.RESIZE/);
+assert.match(source, /activePointers: 3/);
+assert.match(source, /this\.touchPause/);
+assert.match(source, /pointerupoutside/);
+assert.match(source, /const buttonWidth = compact \? Math\.max\(220, w - 36\) : 420/);
+assert.match(source, /const panelScale = Math\.min\(1, \(w - 20\) \/ 640, \(h - 20\) \/ 700\)/);
+assert.match(source, /this\.cameras\.main\.setZoom\(responsiveZoom\)/);
+assert.match(source, /this\.inventoryPanel\.setScale\(inventoryScale\)/);
 assert.match(source, /this\.inventoryPanel\.setPosition\(w - 400, 440\)/);
 assert.match(source, /this\.inventoryText\.setPosition\(w - 620, 135\)/);
 assert.match(source, /this\.inventoryPanel = this\.add\.rectangle\([^\n]+480, 640/);
