@@ -1628,7 +1628,7 @@ class WorldScene extends Phaser.Scene {
         const h = this.scale.height;
         this.touchControlsRoot?.setVisible(false);
         this.touchActionRoot?.setVisible(false);
-        const compact = w < 760 || h < 680;
+        const compact = this.isTouchLayout || w < 760 || h < 680;
         const overlay = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(20000);
         const shade = this.add.rectangle(0, 0, w, h, 0x07100d, 0.88);
         overlay.add(shade);
@@ -1683,7 +1683,7 @@ class WorldScene extends Phaser.Scene {
 
         const buttonGap = compact ? Math.min(62, Math.max(48, (h - 190) / Math.max(1, buttons.length - 1))) : 76;
         const buttonStartY = compact ? -((buttons.length - 1) * buttonGap) / 2 : -95;
-        const buttonWidth = compact ? Math.max(220, w - 36) : 420;
+        const buttonWidth = compact ? Math.min(520, Math.max(220, w - 36)) : 420;
         const buttonHeight = compact ? 44 : 54;
         buttons.forEach(([label, action], index) => {
             const y = buttonStartY + index * buttonGap;
@@ -2810,14 +2810,14 @@ THE END`, {
         this.isTouchLayout = Boolean(
             this.sys.game.device.input.touch ||
             (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) ||
-            w < 760
+            w < 900
         );
         if (!this.menuOpen) {
             this.touchControlsRoot?.setVisible(this.isTouchLayout);
             this.touchActionRoot?.setVisible(this.isTouchLayout);
         }
 
-        const compact = w < 760 || h < 700;
+        const compact = this.isTouchLayout || w < 760 || h < 700;
         const inventoryScale = compact ? Math.min(1, (w - 24) / 480, (h - 24) / 640) : 1;
         if (this.inventoryPanel) {
             this.inventoryPanel.setPosition(compact ? w / 2 : w - 400, compact ? h / 2 : 440).setScale(inventoryScale);
