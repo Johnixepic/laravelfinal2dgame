@@ -1206,7 +1206,9 @@ class WorldScene extends Phaser.Scene {
 
     createCamera() {
         this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-        this.cameras.main.setZoom(1.5);
+        const w = this.scale.width;
+        const h = this.scale.height;
+        this.cameras.main.setZoom(Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650)));
     }
 
     createInteractionSystem() {
@@ -1475,17 +1477,18 @@ class WorldScene extends Phaser.Scene {
 
         this.input.on('wheel', (pointer, currentlyOver, deltaX, deltaY) => {
             if (!this.craftingOpen || !this.recipeScrollArea) return;
+            const panelScale = this.craftingPanel.scaleX || 1;
             const bounds = {
-                left: this.craftingPanel.x - 320,
-                right: this.craftingPanel.x + 320,
-                top: this.craftingPanel.y - 350,
-                bottom: this.craftingPanel.y + 350,
+                left: this.craftingPanel.x - 320 * panelScale,
+                right: this.craftingPanel.x + 320 * panelScale,
+                top: this.craftingPanel.y - 350 * panelScale,
+                bottom: this.craftingPanel.y + 350 * panelScale,
             };
             if (pointer.x < bounds.left || pointer.x > bounds.right ||
                 pointer.y < bounds.top || pointer.y > bounds.bottom) return;
 
             this.recipeScrollOffset = Phaser.Math.Clamp(
-                this.recipeScrollOffset + deltaY * 0.65,
+                this.recipeScrollOffset + (deltaY * 0.65) / (this.craftingPanel.scaleX || 1),
                 0,
                 this.recipeScrollMax
             );
@@ -1497,10 +1500,11 @@ class WorldScene extends Phaser.Scene {
         this.recipeDragStart = null;
         this.input.on('pointerdown', pointer => {
             if (!this.craftingOpen || !this.recipeScrollArea) return;
-            const left = this.craftingPanel.x - 300;
-            const right = this.craftingPanel.x + 300;
-            const top = this.craftingPanel.y - 305;
-            const bottom = this.craftingPanel.y + 270;
+            const panelScale = this.craftingPanel.scaleX || 1;
+            const left = this.craftingPanel.x - 300 * panelScale;
+            const right = this.craftingPanel.x + 300 * panelScale;
+            const top = this.craftingPanel.y - 305 * panelScale;
+            const bottom = this.craftingPanel.y + 270 * panelScale;
             if (pointer.x >= left && pointer.x <= right &&
                 pointer.y >= top && pointer.y <= bottom) {
                 this.recipeDragStart = { y: pointer.y, offset: this.recipeScrollOffset };
@@ -1511,7 +1515,7 @@ class WorldScene extends Phaser.Scene {
         });
         this.input.on('pointermove', pointer => {
             if (!this.recipeDragStart || !pointer.isDown || !this.craftingOpen) return;
-            const delta = this.recipeDragStart.y - pointer.y;
+            const delta = (this.recipeDragStart.y - pointer.y) / (this.craftingPanel.scaleX || 1);
             if (Math.abs(delta) > 8) this.recipeDragMoved = true;
             if (!this.recipeDragMoved) return;
             this.recipeScrollOffset = Phaser.Math.Clamp(
@@ -1622,6 +1626,9 @@ class WorldScene extends Phaser.Scene {
 
         const w = this.scale.width;
         const h = this.scale.height;
+        this.touchControlsRoot?.setVisible(false);
+        this.touchActionRoot?.setVisible(false);
+        const compact = w < 760 || h < 680;
         const overlay = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(20000);
         const shade = this.add.rectangle(0, 0, w, h, 0x07100d, 0.88);
         overlay.add(shade);
@@ -1630,18 +1637,20 @@ class WorldScene extends Phaser.Scene {
             : mode === 'confirm-new' ? 'START A NEW GAME?'
             : mode === 'ending' ? 'JOURNEY COMPLETE'
             : 'PAUSED';
-        const title = this.add.text(0, -245, titleText, {
-            fontFamily: 'sans-serif', fontSize: '38px', fontStyle: 'bold',
+        const titleY = compact ? (-h / 2 + 34) : -245;
+        const titleSize = compact ? Math.max(20, Math.min(30, w * 0.075)) : 38;
+        const title = this.add.text(0, titleY, titleText, {
+            fontFamily: 'sans-serif', fontSize: `${titleSize}px`, fontStyle: 'bold',
             color: '#e2f0d8', align: 'center',
         }).setOrigin(0.5);
         overlay.add(title);
 
-        const subtitle = this.add.text(0, -185,
+        const subtitle = this.add.text(0, compact ? titleY + 38 : -185,
             mode === 'title' ? 'A survival story begins at home.'
                 : mode === 'confirm-new' ? 'Starting over replaces the current browser save.'
                 : mode === 'ending' ? 'You built a way out. Your story continues beyond the island.'
                 : 'Your progress is safe while the game is paused.',
-            { fontFamily: 'sans-serif', fontSize: '16px', color: '#a8c0a0', align: 'center' }
+            { fontFamily: 'sans-serif', fontSize: compact ? '12px' : '16px', color: '#a8c0a0', align: 'center', wordWrap: { width: Math.max(220, w - 40) } }
         ).setOrigin(0.5);
         overlay.add(subtitle);
 
@@ -1672,13 +1681,17 @@ class WorldScene extends Phaser.Scene {
                     ['MAIN MENU', () => this.returnToTitle()],
                 ];
 
+        const buttonGap = compact ? Math.min(62, Math.max(42, (h - 220) / Math.max(1, buttons.length - 1))) : 76;
+        const buttonStartY = compact ? -((buttons.length - 1) * buttonGap) / 2 : -95;
+        const buttonWidth = compact ? Math.max(220, w - 36) : 420;
+        const buttonHeight = compact ? 46 : 54;
         buttons.forEach(([label, action], index) => {
-            const y = -95 + index * 76;
-            const button = this.add.rectangle(0, y, 420, 54, 0x203a29, 1)
+            const y = buttonStartY + index * buttonGap;
+            const button = this.add.rectangle(0, y, buttonWidth, buttonHeight, 0x203a29, 1)
                 .setStrokeStyle(2, 0x8eaa7d, 1)
                 .setInteractive({ useHandCursor: true });
             const text = this.add.text(0, y, label, {
-                fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
+                fontFamily: 'sans-serif', fontSize: compact ? '13px' : '17px', fontStyle: 'bold',
                 color: '#edf5e8', align: 'center',
             }).setOrigin(0.5);
             button.on('pointerover', () => button.setFillStyle(0x34553a));
@@ -1690,14 +1703,16 @@ class WorldScene extends Phaser.Scene {
         let saveExists = false;
         try { saveExists = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { saveExists = false; }
         if (mode === 'title' && !saveExists) {
-            const note = this.add.text(0, 165, 'No saved game found. Start a new journey.', {
-                fontFamily: 'sans-serif', fontSize: '13px', color: '#8c9d87',
+            const lastButtonY = buttonStartY + (buttons.length - 1) * buttonGap;
+            const note = this.add.text(0, compact ? lastButtonY + 40 : 165, 'No saved game found. Start a new journey.', {
+                fontFamily: 'sans-serif', fontSize: compact ? '10px' : '13px', color: '#8c9d87',
             }).setOrigin(0.5);
             overlay.add(note);
         }
-        const footer = this.add.text(0, 245, 'WASD / Arrows to move  ·  E interact  ·  I inventory  ·  ESC pause', {
-            fontFamily: 'sans-serif', fontSize: '12px', color: '#71866f',
-        }).setOrigin(0.5);
+        const footerY = compact ? h / 2 - 18 : 245;
+        const footer = this.add.text(0, footerY, compact ? 'Touch controls available  ·  Tap buttons to play' : 'WASD / Arrows to move  ·  E interact  ·  I inventory  ·  ESC pause',
+            { fontFamily: 'sans-serif', fontSize: compact ? '10px' : '12px', color: '#71866f', align: 'center', wordWrap: { width: Math.max(220, w - 32) } }
+        ).setOrigin(0.5);
         overlay.add(footer);
         this.menuOverlay = overlay;
     }
@@ -1725,6 +1740,8 @@ class WorldScene extends Phaser.Scene {
         this.menuOpen = false;
         this.menuMode = null;
         if (this.player?.body) this.player.body.enable = true;
+        this.touchControlsRoot?.setVisible(this.isTouchLayout);
+        this.touchActionRoot?.setVisible(this.isTouchLayout);
     }
 
     startNewGame() {
@@ -1889,7 +1906,7 @@ class WorldScene extends Phaser.Scene {
 
     createTouchControls() {
         this.touchKeys = { up: false, down: false, left: false, right: false };
-        const root = this.add.container(150, this.scale.height - 170).setScrollFactor(0).setDepth(6000);
+        const root = this.add.container(0, 0).setScrollFactor(0).setDepth(6000);
         const makeButton = (x, y, label, onDown, onUp) => {
             const button = this.add.circle(x, y, 31, 0x10231b, 0.82)
                 .setStrokeStyle(2, 0x91aa80, 0.9)
@@ -1899,6 +1916,7 @@ class WorldScene extends Phaser.Scene {
             }).setOrigin(0.5);
             button.on('pointerdown', onDown);
             button.on('pointerup', onUp);
+            button.on('pointerupoutside', onUp);
             button.on('pointerout', onUp);
             root.add([button, text]);
         };
@@ -1906,12 +1924,13 @@ class WorldScene extends Phaser.Scene {
         makeButton(0, 62, '↓', () => this.touchKeys.down = true, () => this.touchKeys.down = false);
         makeButton(-62, 0, '←', () => this.touchKeys.left = true, () => this.touchKeys.left = false);
         makeButton(62, 0, '→', () => this.touchKeys.right = true, () => this.touchKeys.right = false);
-        const actionRoot = this.add.container(this.scale.width - 150, this.scale.height - 155)
+        const actionRoot = this.add.container(0, 0)
             .setScrollFactor(0).setDepth(6000);
         const interact = this.add.circle(0, 0, 36, 0x315b39, 0.9).setStrokeStyle(2, 0xc5d9b6).setInteractive();
         const interactLabel = this.add.text(0, 0, 'E', { fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
         interact.on('pointerdown', () => this.touchInteract = true);
         interact.on('pointerup', () => this.touchInteract = false);
+        interact.on('pointerupoutside', () => this.touchInteract = false);
         interact.on('pointerout', () => this.touchInteract = false);
         const inventory = this.add.circle(0, 86, 30, 0x263d4c, 0.9).setStrokeStyle(2, 0xb4c8d2).setInteractive();
         const inventoryLabel = this.add.text(0, 86, 'I', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
@@ -1919,15 +1938,26 @@ class WorldScene extends Phaser.Scene {
         const eatLabel = this.add.text(-72, 86, 'F', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
         eat.on('pointerdown', () => this.touchEat = true);
         eat.on('pointerup', () => this.touchEat = false);
+        eat.on('pointerupoutside', () => this.touchEat = false);
         eat.on('pointerout', () => this.touchEat = false);
         inventory.on('pointerdown', () => this.touchInventory = true);
         inventory.on('pointerup', () => this.touchInventory = false);
+        inventory.on('pointerupoutside', () => this.touchInventory = false);
         inventory.on('pointerout', () => this.touchInventory = false);
-        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel]);
-        root.setVisible(Boolean(this.sys.game.device.input.touch));
-        actionRoot.setVisible(Boolean(this.sys.game.device.input.touch));
+        const pause = this.add.circle(0, -78, 27, 0x4b3430, 0.94).setStrokeStyle(2, 0xd7a69a).setInteractive();
+        const pauseLabel = this.add.text(0, -78, 'Ⅱ', { fontSize: '19px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        pause.on('pointerdown', () => this.touchPause = true);
+        pause.on('pointerup', () => this.touchPause = false);
+        pause.on('pointerupoutside', () => this.touchPause = false);
+        pause.on('pointerout', () => this.touchPause = false);
+        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel, pause, pauseLabel]);
+        this.isTouchLayout = Boolean(this.sys.game.device.input.touch || (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) || this.scale.width < 760);
+        root.setVisible(this.isTouchLayout);
+        actionRoot.setVisible(this.isTouchLayout);
         this.touchControlsRoot = root;
         this.touchActionRoot = actionRoot;
+        this.touchPause = false;
+        this.repositionUI();
     }
 
     addItem(key, amount) {
@@ -2778,11 +2808,14 @@ THE END`, {
         const w = this.scale.width;
         const h = this.scale.height;
 
+        const compact = w < 760 || h < 700;
+        const inventoryScale = compact ? Math.min(1, (w - 24) / 480, (h - 24) / 640) : 1;
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(w - 400, 440);
+            this.inventoryPanel.setPosition(compact ? w / 2 : w - 400, compact ? h / 2 : 440).setScale(inventoryScale);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(w - 620, 135);
+            this.inventoryText.setPosition(compact ? w / 2 - 210 * inventoryScale : w - 620, compact ? h / 2 - 300 * inventoryScale : 135);
+            this.inventoryText.setScale(inventoryScale);
             this.inventoryText.setWordWrapWidth(420, true);
         }
 
@@ -2811,15 +2844,20 @@ THE END`, {
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - 72, 72);
         }
-        if (this.touchActionRoot) this.touchActionRoot.setPosition(w - 150, h - 155);
-        if (this.touchControlsRoot) this.touchControlsRoot.setPosition(150, h - 170);
+        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(88, w - 82), h - 120);
+        if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(78, w * 0.23)), h - 110);
         if (this.craftingPanel) {
-            const panelH = 700;
+            const panelScale = Math.min(1, (w - 20) / 640, (h - 20) / 700);
             const panelY = h / 2;
-            this.craftingPanel.setPosition(w / 2, panelY);
+            this.craftingPanel.setPosition(w / 2, panelY).setScale(panelScale);
             this.craftingPanelPosition = { x: w / 2, y: panelY };
-            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY);
+            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY).setScale(panelScale);
         }
+        if (this.cameras?.main) {
+            const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
+            this.cameras.main.setZoom(responsiveZoom);
+        }
+        if (this.menuOpen && this.menuMode && this.menuOverlay) this.openMenu(this.menuMode);
     }
 
     update(time, delta = 16) {
@@ -2827,7 +2865,7 @@ THE END`, {
         if (!body) return;
 
         const interactionDown = this.keys.E.isDown || Boolean(this.touchInteract);
-        const escapeDown = this.keys.ESC.isDown;
+        const escapeDown = this.keys.ESC.isDown || Boolean(this.touchPause);
         if (this.menuOpen) return;
         const inventoryDown = this.keys.I.isDown || Boolean(this.touchInventory);
         const eatDown = this.keys.F.isDown || Boolean(this.touchEat);
@@ -3088,8 +3126,9 @@ if (gameContainer) {
         backgroundColor: '#18343b',
         pixelArt: false,
         antialias: true,
+        input: { activePointers: 3 },
         scale: {
-            mode: Phaser.Scale.FIT,
+            mode: Phaser.Scale.RESIZE,
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
         physics: {
@@ -3106,7 +3145,6 @@ if (gameContainer) {
         window.requestAnimationFrame(() => game.scale.refresh());
     };
     // Temporary diagnostic handle for investigating pointer-coordinate alignment.
-    window.__TLC_GAME_DEBUG__ = game;
     const canvasResizeObserver = new ResizeObserver(refreshCanvasScale);
     canvasResizeObserver.observe(gameContainer);
     game.events.on('ready', refreshCanvasScale);
