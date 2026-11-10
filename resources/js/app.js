@@ -3105,6 +3105,8 @@ if (gameContainer) {
     const refreshCanvasScale = () => {
         window.requestAnimationFrame(() => game.scale.refresh());
     };
+    // Temporary diagnostic handle for investigating pointer-coordinate alignment.
+    window.__TLC_GAME_DEBUG__ = game;
     const canvasResizeObserver = new ResizeObserver(refreshCanvasScale);
     canvasResizeObserver.observe(gameContainer);
     game.events.on('ready', refreshCanvasScale);
