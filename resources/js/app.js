@@ -2908,8 +2908,9 @@ THE END`, {
         if (this.compassRoot) {
             this.compassRoot.setPosition(w - (compact ? 48 : 72), compact ? 48 : 72).setScale(compact ? 0.78 : 1);
         }
-        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(220, w - 48), h - 120);
-        if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(78, w * 0.23)), h - 110);
+        const touchScale = w < 360 ? 0.82 : w < 430 ? 0.9 : 1;
+        if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(220, w - 42), h - 120).setScale(touchScale);
+        if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(68, w * 0.23)), h - 110).setScale(touchScale);
         if (this.workbenchHintText) {
             this.workbenchHintText.setText(this.isTouchLayout
                 ? 'Swipe to browse  ·  Tap a recipe  ·  Pause to close'
