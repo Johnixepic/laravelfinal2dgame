@@ -66,7 +66,7 @@ assert.match(source, /this\.createCompass\(\)/);
 assert.match(source, /createCompass\(\) \{/);
 assert.match(source, /updateCompass\(dx, dy\) \{/);
 assert.match(source, /root\.setScrollFactor\(0\)/);
-assert.match(source, /this\.compassRoot\.setPosition\(w - 72, 72\)/);
+assert.match(source, /this\.compassRoot\.setPosition\(w - \(compact \? 48 : 72\), compact \? 48 : 72\)\.setScale\(compact \? 0\.78 : 1\)/);
 assert.match(source, /this\.compassNeedle\.setRotation\(rotations\[this\.facingDirection\]\)/);
 assert.match(source, /this\.scale\.on\('resize', this\.repositionUI, this\)/);
 assert.match(source, /this\.updateCompass\(idx, idy\)/);
