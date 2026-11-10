@@ -235,5 +235,16 @@ assert.match(source, /this\.interactionPrompt\.setFontSize\(compact \? 12 : 15\)
 assert.match(source, /this\.hintTextObj\.setFontSize\(compact \? 10 : 12\)/);
 assert.match(source, /this\.indoorPrompt\.setFontSize\(compact \? 12 : 16\)/);
 assert.match(source, /const touchScale = w < 360 \? 0\.82 : w < 430 \? 0\.9 : 1/);
+ // TLC-029: approaching world objects explains what they do and how to use them.
+ assert.match(source, /getNearbyHelpTip\(object\) \{/);
+ assert.match(source, /Trees need a Saw/);
+ assert.match(source, /Open the workbench to craft tools and process materials/);
+ assert.match(source, /Boat work needs tools:/);
+ assert.match(source, /Search buildings for supplies/);
+ assert.match(source, /Collect \$\{itemName\} here/);
+ assert.match(source, /const actionKey = this\.isTouchLayout \? 'TAP' : 'E'/);
+ assert.match(source, /this\.getNearbyHelpTip\(this\.nearbyObject\)/);
+ assert.match(source, /interactionPrompt\.text\}\\n\$\{helpTip\}/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
