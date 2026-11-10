@@ -83,7 +83,7 @@ assert.match(source, /mode: Phaser\.Scale\.RESIZE/);
 assert.match(source, /activePointers: 3/);
 assert.match(source, /this\.touchPause/);
 assert.match(source, /pointerupoutside/);
-assert.match(source, /const buttonWidth = compact \? Math\.max\(220, w - 36\) : 420/);
+assert.match(source, /const buttonWidth = compact \? Math\.min\(520, Math\.max\(220, w - 36\)\) : 420/);
 assert.match(source, /const panelScale = Math\.min\(1, \(w - 20\) \/ 640, \(h - 20\) \/ 700\)/);
 assert.match(source, /this\.cameras\.main\.setZoom\(responsiveZoom\)/);
 assert.match(source, /\.setPosition\(compact \? w \/ 2 : w - 400, compact \? h \/ 2 : 440\)\.setScale\(inventoryScale\)/);
