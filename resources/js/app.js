@@ -1681,10 +1681,10 @@ class WorldScene extends Phaser.Scene {
                     ['MAIN MENU', () => this.returnToTitle()],
                 ];
 
-        const buttonGap = compact ? Math.min(62, Math.max(42, (h - 220) / Math.max(1, buttons.length - 1))) : 76;
+        const buttonGap = compact ? Math.min(62, Math.max(48, (h - 190) / Math.max(1, buttons.length - 1))) : 76;
         const buttonStartY = compact ? -((buttons.length - 1) * buttonGap) / 2 : -95;
         const buttonWidth = compact ? Math.max(220, w - 36) : 420;
-        const buttonHeight = compact ? 46 : 54;
+        const buttonHeight = compact ? 44 : 54;
         buttons.forEach(([label, action], index) => {
             const y = buttonStartY + index * buttonGap;
             const button = this.add.rectangle(0, y, buttonWidth, buttonHeight, 0x203a29, 1)
@@ -2851,7 +2851,7 @@ THE END`, {
             this.messageText.setWordWrapWidth(Math.max(280, Math.min(760, w - 48)), true);
         }
         if (this.compassRoot) {
-            this.compassRoot.setPosition(w - 72, 72);
+            this.compassRoot.setPosition(w - (compact ? 48 : 72), compact ? 48 : 72).setScale(compact ? 0.78 : 1);
         }
         if (this.touchActionRoot) this.touchActionRoot.setPosition(Math.max(250, w - 48), h - 120);
         if (this.touchControlsRoot) this.touchControlsRoot.setPosition(Math.min(112, Math.max(78, w * 0.23)), h - 110);
