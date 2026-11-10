@@ -96,13 +96,13 @@ assert.match(source, /this\.inventoryPanel[\s\S]*?setDepth\(5000\)/);
 assert.match(source, /this\.inventoryText[\s\S]*?setDepth\(5001\)/);
 assert.match(source, /if \(this\.inventoryOpen\) this\.refreshInventoryUI\(\)/);
 assert.match(source, /if \(escapePressed && this\.inventoryOpen\)/);
-assert.match(source, /this\.messageText\.setPosition\(w \/ 2, 118\)/);
+assert.match(source, /this\.messageText\.setPosition\(w \/ 2, compact \? Math\.max\(112, h \* 0\.18\) : 118\)/);
 assert.match(source, /this\.children\.bringToTop\(this\.messageText\)/);
 assert.match(source, /ALREADY SEARCHED/);
 assert.match(source, /ALREADY HARVESTED/);
 assert.match(source, /this\.messageText\.setScrollFactor\(0, 0\)/);
 assert.match(source, /this\.messageHideEvent = this\.time\.delayedCall\(4500/);
-assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - 120\)/);
+assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - \(compact \? 126 : 120\)\)/);
 assert.match(source, /this\.mapLabel = null;/);
 assert.match(source, /this\.mapLabel && this\.mapLabel\.scene === this && this\.mapLabel\.active/);
 // TLC-024: visible gates and transitions share the exact exit tile coordinates.
