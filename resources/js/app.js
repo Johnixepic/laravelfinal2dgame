@@ -1902,6 +1902,17 @@ class WorldScene extends Phaser.Scene {
     }
 
     startNewGame() {
+        // Preserve the existing save before mutating the current run or clearing its slot.
+        try {
+            const existingSave = localStorage.getItem('tlc-save-v1');
+            if (existingSave) localStorage.setItem('tlc-save-backup-v1', existingSave);
+            localStorage.removeItem('tlc-save-v1');
+        } catch (error) {
+            console.error('[THE LAST CONNECTION] Could not preserve the previous save before starting fresh:', error);
+            this.showMenuNotice('Could not protect the previous save. Browser storage may be full or unavailable; your existing save was kept.');
+            return false;
+        }
+
         // Remove the old title/confirmation overlay before restarting the scene.
         // This prevents stale menu fragments surviving a resize or scene restart.
         this.destroyMenuDom();
@@ -1922,19 +1933,6 @@ class WorldScene extends Phaser.Scene {
         this.menuOpen = false;
         this.menuMode = null;
         GameState.tutorialPending = true;
-        try {
-            const existingSave = localStorage.getItem('tlc-save-v1');
-            if (existingSave) localStorage.setItem('tlc-save-backup-v1', existingSave);
-            localStorage.removeItem('tlc-save-v1');
-        } catch (error) {
-            console.error('[THE LAST CONNECTION] Could not preserve the previous save before starting fresh:', error);
-            // Do not destroy the primary save when the backup cannot be written.
-            this.menuOpen = true;
-            this.openMenu('title');
-            this.showMenuNotice('Could not protect the previous save. Browser storage may be full; your existing save was kept.');
-            GameState.started = false;
-            return false;
-        }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
 
