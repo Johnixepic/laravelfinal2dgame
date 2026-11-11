@@ -266,5 +266,21 @@ assert.match(source, /const touchScale = w < 360 \? 0\.82 : w < 430 \? 0\.7 : 1/
  assert.match(source, /this\.getNearbyHelpTip\(this\.nearbyObject\)/);
  assert.match(source, /interactionPrompt\.text\}\\n\$\{helpTip\}/);
 
+// TLC-030: the victory ending hides gameplay HUD and uses readable, opaque presentation.
+const ending = section('    showEnding() {', '    // DO019: Reset every gameplay system');
+assert.match(ending, /this\.endingActive = true/);
+assert.match(ending, /this\.cameras\.main\.stopFollow\(\)/);
+assert.doesNotMatch(ending, /startFollow\(this\.boatSite/);
+assert.match(ending, /this\.boatSite,[\s\S]*?alpha: 0,[\s\S]*?duration: 2600/);
+assert.match(ending, /this\.boatText,[\s\S]*?this\.touchActionRoot/);
+assert.match(ending, /element\?\.setVisible\(false\)/);
+assert.match(ending, /0x07120f, 0\.96/);
+assert.match(ending, /color: '#f1f7e9'/);
+assert.match(ending, /color: '#d0e2c4'/);
+assert.match(ending, /color: '#c0d5b5'/);
+assert.match(ending, /color: '#a9c59b'/);
+assert.match(ending, /wordWrap: \{ width: Math\.min\(720, viewW - 48\) \}/);
+assert.match(ending, /this\.input\.keyboard\.once\('keydown-R'/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
