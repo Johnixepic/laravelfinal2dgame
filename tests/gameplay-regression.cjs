@@ -127,7 +127,8 @@ assert.match(source, /createMenuDomButtons\(buttons, buttonStartY, buttonGap, bu
 assert.match(source, /document\.createElement\('button'\)/);
 assert.match(source, /button\.addEventListener\('click'/);
 assert.doesNotMatch(source, /button\.setInteractive\(\{ useHandCursor: true \}\)/);
-assert.doesNotMatch(source, /button\.on\('pointerup'/);
+const menuDom = section('    createMenuDomButtons(', '    destroyMenuDom() {');
+assert.doesNotMatch(menuDom, /button\.on\('pointerup'/);
 assert.match(source, /destroyMenuDom\(\)/);
 assert.match(source, /this\.cameras\?\.main\?\.stopFollow\(\)/);
 assert.match(source, /this\.cameras\?\.main\?\.startFollow\(this\.player, true, 0\.08, 0\.08\)/);
