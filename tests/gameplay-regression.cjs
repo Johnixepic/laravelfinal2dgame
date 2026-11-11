@@ -248,9 +248,9 @@ assert.match(source, /this\.survival\.hunger = Math\.max\(0, this\.survival\.hun
 assert.match(source, /eatFood\(\) \{/);
 assert.match(source, /this\.removeItem\('food', 1\)/);
 assert.match(source, /this\.survival\.hunger <= 15 \? 0\.75 : 1/);
-assert.match(source, /NIGHT \(SAFE\)/);
+assert.match(source, /NIGHT · DANGER/);
 assert.match(source, /this\.survival\.elapsedMs % cycleLength/);
-assert.match(source, /this\.survival\.hunger \+ 35/);
+assert.match(source, /this\.survival\.hunger \+ 40/);
 assert.match(source, /F TO EAT/);
 assert.match(source, /playSfx\(kind = 'interact'\)/);
 assert.match(source, /SOUND: /);
