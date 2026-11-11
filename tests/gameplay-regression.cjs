@@ -252,7 +252,7 @@ assert.match(source, /this\.survival\.hunger <= 15 \? 0\.75 : 1/);
 assert.match(source, /NIGHT · DANGER/);
 assert.match(source, /this\.survival\.elapsedMs % cycleLength/);
 assert.match(source, /this\.survival\.hunger \+ 40/);
-assert.match(source, /F TO EAT/);
+assert.match(source, /F EAT/);
 assert.match(source, /playSfx\(kind = 'interact'\)/);
 assert.match(source, /SOUND: /);
 assert.match(source, /this\.playSfx\('victory'\)/);
