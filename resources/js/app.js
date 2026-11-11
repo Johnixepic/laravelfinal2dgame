@@ -1958,6 +1958,7 @@ class WorldScene extends Phaser.Scene {
             if (event.key === 'Escape') {
                 event.preventDefault();
                 this.finishTutorial(true);
+                this.escapeWasDown = true;
             } else if (event.key === 'ArrowRight' || event.key === 'Enter') {
                 if (event.key === 'Enter' && event.target?.tagName === 'BUTTON') return;
                 event.preventDefault();
