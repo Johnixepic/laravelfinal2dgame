@@ -3818,7 +3818,7 @@ THE END`, {
             }
 
             const helpTip = this.getNearbyHelpTip(this.nearbyObject);
-            if (helpTip) this.interactionPrompt.setText(`${this.interactionPrompt.text}\\n${helpTip}`);
+            if (helpTip) this.interactionPrompt.setText(`${this.interactionPrompt.text}\n${helpTip}`);
             this.interactionPrompt.setVisible(true);
         } else {
             this.interactionPrompt.setVisible(false);
