@@ -413,6 +413,7 @@ assert.match(source, /const flankX = this\.player\.x \+ Math\.cos\(creature\.fla
 assert.match(source, /playerThreatened/);
 assert.match(source, /const creatures = \(this\.nightCreatures \|\| \[this\.nightCreature\]\)/);
 assert.match(source, /this\.nightWaveCleared = true/);
+assert.match(source, /GameState\.objectStates\[this\.currentMapId\] = this\.captureCurrentMapObjectStates\(\)/);
 assert.match(source, /this\.showMessage\('You woke at home[\s\S]*?this\.saveGame\(\{ silent: true \}\);/);
 assert.match(source, /elapsedMs: 120000, hunger: 100[\s\S]*day: 1, isNight: true/);
 assert.match(source, /this\.currentMapId === 'MAP1' \|\| !isNight/);
