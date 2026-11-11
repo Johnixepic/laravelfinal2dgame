@@ -188,6 +188,31 @@
             #game-container canvas { width: 100%; height: 100%; }
         }
 
+        /* A portrait phone cannot display the full game layout reliably.
+           Ask the player to rotate instead of showing a blank/cropped canvas. */
+        .rotate-device-notice {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 50000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            padding: 32px;
+            text-align: center;
+            background: #101b1d;
+            color: #edf3e9;
+        }
+        .rotate-device-notice .rotate-icon { font-size: 64px; line-height: 1; }
+        .rotate-device-notice h2 { margin: 0; font-size: 22px; letter-spacing: 1px; }
+        .rotate-device-notice p { max-width: 300px; margin: 0; color: #b8c9bb; line-height: 1.5; }
+
+        @media (pointer: coarse) and (orientation: portrait) {
+            #game-container { visibility: hidden; }
+            .rotate-device-notice { display: flex; }
+        }
+
         @media (orientation: landscape) and (max-height: 500px) {
             .game-header { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
             .game-header h1 { font-size: 11px; }
@@ -206,6 +231,11 @@
     <main>
         <section class="game-frame" aria-label="Game area">
             <div id="game-container"></div>
+            <div class="rotate-device-notice" role="status" aria-live="polite">
+                <div class="rotate-icon" aria-hidden="true">↻</div>
+                <h2>ROTATE YOUR PHONE</h2>
+                <p>THE LAST CONNECTION is designed for landscape play. Turn your phone sideways to start playing.</p>
+            </div>
             <div class="game-footer">
                 <span>WASD / Arrow keys — Move</span>
                 <span>E — Interact  ·  I — Inventory  ·  F — Eat food  ·  ESC — Pause / close panels</span>
