@@ -33,6 +33,7 @@ assert.ok(
 );
 assert.match(update, /const step = Math\.min\(Math\.max\(delta, 0\), 50\) \/ 1000/);
 assert.match(update, /const interactionPressed = interactionDown && !this\.interactionWasDown/);
+assert.match(update, /if \(this\.menuOpen \|\| this\.endingActive\) return/);
 assert.match(update, /if \(escapePressed\) this\.exitIndoor\(\)/);
 assert.match(update, /this\.checkMapTransition\(\)/);
 // Map transitions are blocked while indoors and latched while changing scenes.
@@ -344,6 +345,8 @@ assert.match(source, /const touchScale = w < 360 \? 0\.82 : w < 430 \? 0\.9 : 1/
 // TLC-030: the victory ending hides gameplay HUD and uses readable, opaque presentation.
 const ending = section('    showEnding() {', '    // DO019: Reset every gameplay system');
 assert.match(ending, /this\.endingActive = true/);
+assert.match(ending, /this\.player\?\.setVelocity\(0, 0\)/);
+assert.match(ending, /this\.player\.body\.enable = false/);
 assert.match(ending, /this\.cameras\.main\.stopFollow\(\)/);
 assert.doesNotMatch(ending, /startFollow\(this\.boatSite/);
 assert.match(ending, /this\.boatSite,[\s\S]*?alpha: 0,[\s\S]*?duration: 2600/);
