@@ -148,7 +148,7 @@ assert.match(saveMethods, /GameState\.objectStates = allObjectStates/);
 assert.match(saveMethods, /GameState\.inventory = this\.inventory/);
 assert.match(saveMethods, /GameState\.equipment = this\.equipment/);
 assert.match(saveMethods, /QuotaExceededError/);
-assert.match(saveMethods, /localStorage\.getItem\('tlc-save-v1'\)/);
+assert.match(saveMethods, /localStorage\.getItem\(saveKey\)/);
 assert.match(saveMethods, /Save validation failed/);
 assert.match(saveMethods, /normalizedObjectStates/);
 assert.match(saveMethods, /this\.scene\.start\('WorldScene'/);
