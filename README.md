@@ -7,7 +7,7 @@ A 2D exploration and crafting game built with Phaser.js and Laravel.
 You wake up on a small island with nothing but the clothes on your back. Search your home, gather resources, discover a workbench, craft tools, and repair a boat across four stages — then sail to escape.
 
 **Genre**: 2D survival/crafting exploration
-**Canvas**: 960x600 (responsive)
+**Canvas**: 1920x1080 reference canvas, scaled responsively to 16:9
 **Maps**: 5 connected island maps with eastward progression
 **Win Condition**: Build a boat through 4 stages, reach the eastern coast (MAP5), and sail away
 
@@ -31,7 +31,7 @@ npm run build
 ```
 php artisan serve
 ```
-Open http://localhost:8000/game in a browser.
+Open http://localhost:8000/ in a browser.
 
 ### Production Build
 ```
@@ -45,22 +45,25 @@ php artisan optimize
 |-----|--------|
 | WASD / Arrow Keys | Move |
 | E | Interact (search, gather, craft, build boat) |
-| ESC | Close crafting panel |
+| I | Toggle inventory side panel |
+| ESC | Close open panel / pause game |
+| F | Eat one food item to restore hunger |
 | R (after win) | Restart game |
+| Touch controls | On-screen movement, interact and inventory controls on touch devices |
 
 ## Gameplay
 
 1. Search your home — find initial supplies (wood, cloth, food)
 2. Explore the island — walk east to discover new maps and resources
 3. Find a workbench — enter the Old Store on MAP2 to discover one
-4. Craft tools — use the workbench to craft a Crude Axe and other items
-5. Gather resources — cut trees for wood, search houses for scrap and rope
-6. Build the boat — visit the boat site on MAP5 and complete all 4 stages:
+4. Craft tools — use the workbench to craft the reusable Saw, Hammer, Crowbar, and Screwdriver
+5. Gather resources — the Saw is required to cut trees; search buildings across MAP2–MAP4 for guaranteed minimum construction supplies
+6. Build the boat — craft all four tools first, then visit the boat site on MAP5 and complete all 4 stages:
    - Stage 1: Hull — 12 wood
    - Stage 2: Reinforcement — 6 scrap + 4 wood
    - Stage 3: Rigging — 5 rope
    - Stage 4: Sail — 6 cloth
-7. Sail away — press E at the completed boat to trigger the ending cinematic
+7. Sail away — after all four stages are complete, press E again at the boat on MAP5 to trigger the ending sequence. Click the ending prompt or press ESC to access replay and main-menu options.
 
 ## Maps
 
@@ -72,13 +75,29 @@ php artisan optimize
 | MAP4 | Deep Wilderness | Dark forest green | Plant fibers, wood |
 | MAP5 | Coastal Escape | Shoreline green | Driftwood, cloth |
 
+## Survival, audio and touch controls
+
+- The world cycles through daylight and night. Night is currently safe: there are no hostile creature encounters or combat in this MVP.
+- Hunger decreases gradually while playing. Press F (or tap the F touch button) to consume one Food and restore hunger; low hunger reduces movement speed but never blocks the ending.
+- Short synthesized sound cues play for pickups, crafting, map transitions, eating, and victory. Sound can be toggled from the pause menu.
+- Touch devices receive on-screen movement, interact, inventory, and eat controls. The workbench recipe list supports swipe scrolling; tapping a recipe crafts it.
+
+## Menus and saved games
+
+- The title screen offers New Game, Continue / Load Save, and Exit to Browser.
+- Press ESC during play to pause, save to this browser, load the saved game, resume, or return to the title screen.
+- Saves use browser `localStorage` on the current device and browser. The game quietly autosaves about once per minute and creates a checkpoint whenever you change maps; you can also save manually from the pause menu. Clearing site data or changing browsers removes access to that save; this is not cloud storage.
+- Saved games include the current map and position, inventory, tools, boat progress, searched buildings, and harvested trees.
+- Touch devices receive on-screen movement, interact, inventory, and eat controls.
+- The browser does not allow a normal webpage to close its own tab, so Exit to Browser displays a reminder instead.
+
 ## Project Structure
 
 ```
 2DGame/
   resources/
     js/
-      app.js              # Main Phaser game (2,184 lines)
+      app.js              # Main Phaser game
     views/
       game.blade.php      # Laravel view (header + canvas + footer)
   public/build/           # Vite compiled assets
@@ -90,7 +109,7 @@ php artisan optimize
 ## Game Architecture
 
 ### Core Systems
-- **GameState** — Persistent state across map transitions (inventory, equipment, boatStage, boatBuilt, workbenchDiscovered)
+- **GameState** — Persistent state across map transitions (inventory, four reusable tools, boatStage, boatBuilt, workbenchDiscovered)
 - **MAPS** — 5 map definitions with terrain colors, exits, and fog margins
 - **ITEM_DEFS** — 12 item definitions with name, limit, description, and category
 - **RECIPES** — Crafting recipes with ingredient requirements and workbench gating
@@ -112,7 +131,8 @@ php artisan optimize
 - All game logic lives in resources/js/app.js
 - Map definitions, item data, and recipes are top-level constants for easy editing
 - DDO files track the development history; see DDO-021 for the latest architecture summary
-- The game has no audio, no mobile touch controls, and no server-side save (by design for demo scope)
+- Browser saves are local to the current browser/device; there is no server-side or cloud save.
+- Mobile touch controls, basic hunger/food, a safe day/night cycle, and synthesized sound cues are included. Combat and hostile night encounters remain outside the escape-focused MVP.
 
 ## License
 
