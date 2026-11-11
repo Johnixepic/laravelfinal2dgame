@@ -218,7 +218,7 @@ assert.match(source, /localStorage\.setItem\('tlc-save-v1'/);
 assert.match(source, /loadSavedGame\(slot = 'current'\) \{/);
 assert.match(source, /hasSavedGame\(slot = 'current'\)/);
 assert.match(source, /localStorage\.getItem\('tlc-save-v1'/);
-assert.match(source, /localStorage\.getItem\('tlc-save-backup-v1'/);
+assert.match(source, /slot === 'backup' \? 'tlc-save-backup-v1' : 'tlc-save-v1'/);
 assert.match(source, /localStorage\.setItem\('tlc-save-backup-v1', existingSave\)/);
 assert.match(source, /this\.loadSavedGame\('backup'\)/);
 assert.match(source, /if \(!saved\) \{/);
