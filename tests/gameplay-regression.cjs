@@ -265,6 +265,12 @@ assert.match(source, /const touchScale = w < 360 \? 0\.82 : w < 430 \? 0\.7 : 1/
  assert.match(source, /const actionKey = this\.isTouchLayout \? 'TAP' : 'E'/);
  assert.match(source, /this\.getNearbyHelpTip\(this\.nearbyObject\)/);
  assert.match(source, /interactionPrompt\.text\}\\n\$\{helpTip\}/);
+ assert.match(source, /backgroundColor: '#07120ff5'/);
+ assert.match(source, /color: '#ffffff'/);
+ assert.match(source, /interactionPrompt\.setFontSize\(compact \? 13 : 16\)/);
+ assert.match(source, /hintTextObj\.setFontSize\(compact \? 11 : 13\)/);
+ assert.match(source, /this\.boatText\.setPosition\(compact \? 12 : 24, \(compact \? 66 : 24\) \+ h \* 0\.2\)/);
+
 
 // TLC-030: the victory ending hides gameplay HUD and uses readable, opaque presentation.
 const ending = section('    showEnding() {', '    // DO019: Reset every gameplay system');
