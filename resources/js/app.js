@@ -530,6 +530,7 @@ class WorldScene extends Phaser.Scene {
         this.menuMode = null;
         this.menuActionAt = -Infinity;
         this.menuCameraZoom = null;
+        this.destroyMenuDom();
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
         this.inventoryOpen = false;
@@ -1694,6 +1695,7 @@ class WorldScene extends Phaser.Scene {
 
     openMenu(mode = 'pause') {
         const openingMenu = !this.menuOpen;
+        this.destroyMenuDom();
         if (this.menuOverlay) this.menuOverlay.destroy();
         this.menuNoticeText = null;
         if (openingMenu) {
@@ -1781,22 +1783,15 @@ class WorldScene extends Phaser.Scene {
         buttons.forEach(([label, action], index) => {
             const y = buttonStartY + index * buttonGap;
             const button = this.add.rectangle(0, y, buttonWidth, buttonHeight, 0x203a29, 1)
-                .setStrokeStyle(2, 0x8eaa7d, 1)
-                .setInteractive({ useHandCursor: true });
+                .setStrokeStyle(2, 0x8eaa7d, 1);
             const text = this.add.text(0, y, label, {
                 fontFamily: 'sans-serif', fontSize: compact ? '13px' : '17px', fontStyle: 'bold',
                 color: '#edf5e8', align: 'center',
             }).setOrigin(0.5);
-            button.on('pointerover', () => button.setFillStyle(0x34553a));
-            button.on('pointerout', () => button.setFillStyle(0x203a29));
-            button.on('pointerup', () => {
-                const now = this.time?.now ?? Date.now();
-                if (now - (this.menuActionAt ?? -Infinity) < 250) return;
-                this.menuActionAt = now;
-                action();
-            });
             overlay.add([button, text]);
         });
+
+        this.createMenuDomButtons(buttons, buttonStartY, buttonGap, buttonWidth, buttonHeight);
 
         let saveExists = false;
         try { saveExists = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { saveExists = false; }
@@ -1814,6 +1809,57 @@ class WorldScene extends Phaser.Scene {
         ).setOrigin(0.5);
         overlay.add(footer);
         this.menuOverlay = overlay;
+    }
+
+    // Browser-native controls bypass Phaser camera and pointer-coordinate transforms.
+    createMenuDomButtons(buttons, startY, gap, width, height) {
+        this.destroyMenuDom();
+        const parent = this.game?.canvas?.parentElement;
+        if (!parent || typeof document === 'undefined') return;
+        const layer = document.createElement('div');
+        layer.className = 'game-dom-menu';
+        layer.setAttribute('role', 'group');
+        layer.setAttribute('aria-label', 'Game menu');
+        Object.assign(layer.style, {
+            position: 'absolute', inset: '0', zIndex: '30000',
+            pointerEvents: 'none', overflow: 'hidden',
+        });
+        buttons.forEach(([label, action], index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = label;
+            button.className = 'game-dom-menu-button';
+            button.setAttribute('aria-label', label);
+            Object.assign(button.style, {
+                position: 'absolute', left: '50%',
+                top: `calc(50% + ${startY + index * gap}px)`,
+                width: `${width}px`, maxWidth: 'calc(100% - 24px)',
+                height: `${height}px`, transform: 'translate(-50%, -50%)',
+                pointerEvents: 'auto', cursor: 'pointer',
+                border: '2px solid #8eaa7d', borderRadius: '4px',
+                background: '#203a29', color: '#edf5e8',
+                font: 'bold 17px Arial, sans-serif', letterSpacing: '0.3px',
+                touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
+            });
+            button.addEventListener('pointerenter', () => { button.style.background = '#34553a'; });
+            button.addEventListener('pointerleave', () => { button.style.background = '#203a29'; });
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const now = Date.now();
+                if (now - (this.menuActionAt ?? -Infinity) < 250) return;
+                this.menuActionAt = now;
+                action();
+            });
+            layer.appendChild(button);
+        });
+        parent.appendChild(layer);
+        this.menuDomLayer = layer;
+    }
+
+    destroyMenuDom() {
+        if (this.menuDomLayer?.parentNode) this.menuDomLayer.parentNode.removeChild(this.menuDomLayer);
+        this.menuDomLayer = null;
     }
 
     confirmNewGame() {
@@ -1839,6 +1885,7 @@ class WorldScene extends Phaser.Scene {
 
     closeMenu() {
         if (!this.menuOpen) return;
+        this.destroyMenuDom();
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
         this.menuNoticeText = null;
@@ -1857,6 +1904,7 @@ class WorldScene extends Phaser.Scene {
     startNewGame() {
         // Remove the old title/confirmation overlay before restarting the scene.
         // This prevents stale menu fragments surviving a resize or scene restart.
+        this.destroyMenuDom();
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
         GameState.inventory = Object.fromEntries(Object.keys(ITEM_DEFS).map(key => [key, 0]));
