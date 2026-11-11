@@ -401,5 +401,19 @@ assert.match(gameView, /\.game-tutorial-panel/);
 assert.match(gameView, /\.game-tutorial-actions button:focus-visible/);
 assert.match(gameView, /@media \(max-width: 520px\)/);
 
+
+// TLC-032: balanced survival, night threat avoidance and checkpoint death recovery.
+assert.match(source, /updateNightThreat\(delta\)/);
+assert.match(source, /NIGHT · DANGER/);
+assert.match(source, /isAtHomeShelter\(\)/);
+assert.match(source, /this\.survival\.health = Math\.max\(0, \(this\.survival\.health \?\? 100\) - 8\)/);
+assert.match(source, /this\.survival\.health = Math\.max\(0, \(this\.survival\.health \?\? 100\) - 2\)/);
+assert.match(source, /handlePlayerDeath\(\)/);
+assert.match(source, /startTile: \{ i: 13, j: 13 \}, respawned: true/);
+assert.match(source, /Math\.ceil\(amount \* 0\.2\)/);
+assert.match(source, /health: Phaser\.Math\.Clamp/);
+assert.match(source, /starvationTickMs/);
+assert.match(source, /creatureAttackMs/);
+
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: tutorial flow, indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
