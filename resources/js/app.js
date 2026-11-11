@@ -1985,9 +1985,12 @@ class WorldScene extends Phaser.Scene {
             (save.boatStagesCompleted === undefined ||
                 (Array.isArray(save.boatStagesCompleted) &&
                     save.boatStagesCompleted.length === BOAT_STAGES.length &&
-                    save.boatStagesCompleted.every(value => typeof value === 'boolean'))) &&
+                    save.boatStagesCompleted.every((value, index) =>
+                        typeof value === 'boolean' && value === (index < save.boatStage)))) &&
             (save.boatBuilt === undefined || typeof save.boatBuilt === 'boolean') &&
-            Boolean(save.boatBuilt) === (save.boatStage === BOAT_STAGES.length);
+            (save.boatBuilt === undefined
+                ? save.boatStage === BOAT_STAGES.length
+                : save.boatBuilt === (save.boatStage === BOAT_STAGES.length));
         const validSurvival = save?.survival && typeof save.survival === 'object' &&
             Number.isFinite(save.survival.elapsedMs) && save.survival.elapsedMs >= 0 &&
             Number.isFinite(save.survival.hunger) && save.survival.hunger >= 0 &&
