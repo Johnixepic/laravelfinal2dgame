@@ -1971,6 +1971,8 @@ class WorldScene extends Phaser.Scene {
     }
 
     returnToTitle() {
+        // Preserve the current run before switching back to the title screen.
+        this.persistCurrentRun();
         GameState.started = false;
         this.scene.restart({ showTitle: true });
     }
