@@ -2940,20 +2940,27 @@ THE END`, {
             this.boatText.setPosition(compact ? 12 : 24, compact ? 66 : 24);
             this.refreshBoatUI();
         }
+        // Contextual help boxes stay centered with a 3% safe inset on both
+        // sides, preventing their backgrounds and wrapped text from touching
+        // or being clipped by the viewport edges.
+        const helpSafeWidth = Math.max(180, w * 0.94);
         if (this.interactionPrompt) {
+            this.interactionPrompt.setOrigin(0.5);
             this.interactionPrompt.setPosition(w / 2, h - (compact ? 126 : 120));
             this.interactionPrompt.setFontSize(compact ? 12 : 15);
-            this.interactionPrompt.setWordWrapWidth(Math.max(180, w - 150), true);
+            this.interactionPrompt.setWordWrapWidth(helpSafeWidth, true);
         }
         if (this.hintTextObj) {
+            this.hintTextObj.setOrigin(0.5);
             this.hintTextObj.setPosition(w / 2, h - 20);
             this.hintTextObj.setFontSize(compact ? 10 : 12);
-            this.hintTextObj.setWordWrapWidth(Math.max(180, w - 150), true);
+            this.hintTextObj.setWordWrapWidth(helpSafeWidth, true);
         }
         if (this.indoorPrompt) {
+            this.indoorPrompt.setOrigin(0.5);
             this.indoorPrompt.setPosition(w / 2, h - (compact ? 92 : 90));
             this.indoorPrompt.setFontSize(compact ? 12 : 16);
-            this.indoorPrompt.setWordWrapWidth(Math.max(180, w - 48), true);
+            this.indoorPrompt.setWordWrapWidth(helpSafeWidth, true);
         }
 
         if (this.nightOverlay) this.nightOverlay.setPosition(w / 2, h / 2).setSize(w, h);
