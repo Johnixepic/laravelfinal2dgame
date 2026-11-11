@@ -2656,6 +2656,9 @@ THE END`, {
         const toolLabels = { saw: 'Saw', hammer: 'Hammer', crowbar: 'Crowbar', screwdriver: 'Screwdriver' };
         const missingTools = requiredTools.filter(key => !this.equipment[key]);
         const stage = BOAT_STAGES[this.boatStage];
+        const missingMaterials = stage
+            ? Object.entries(stage.ingredients).filter(([key, amount]) => (this.inventory[key] || 0) < amount)
+            : [];
         const completedStages = this.boatStagesCompleted.filter(Boolean).length;
         const compact = Boolean(this.isTouchLayout);
         const lines = [
@@ -2696,9 +2699,6 @@ THE END`, {
                 }
             }
 
-            const missingMaterials = stage
-                ? Object.entries(stage.ingredients).filter(([key, amount]) => (this.inventory[key] || 0) < amount)
-                : [];
             lines.push('', 'NEXT ACTION');
             if (missingTools.length) {
                 lines.push(`Craft: ${missingTools.map(key => toolLabels[key]).join(', ')}`);
