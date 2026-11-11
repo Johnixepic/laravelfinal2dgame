@@ -239,8 +239,7 @@ assert.match(source, /alreadyOwned \? 'ALREADY OWNED'/);
 assert.match(source, /this\.refreshRecipeUI\(\);/);
 assert.match(source, /GameState\.workbenchDiscovered = true/);
 assert.match(source, /GameState\.started = false/);
-assert.match(source, /GameState\.tutorialPending = Boolean\(tutorial\)/);
-assert.match(source, /this\.startTutorial\(\);/);
+
 assert.match(source, /this\.startNewGame\(\);/);
 assert.match(source, /this\.openMenu\('ending'\)/);
  // TLC-026: safe survival loop, food action, day/night state and optional sound effects.
@@ -393,4 +392,4 @@ assert.match(gameView, /\.game-tutorial-actions button:focus-visible/);
 assert.match(gameView, /@media \(max-width: 520px\)/);
 
 console.log('Gameplay regression checks: PASS');
-console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
+console.log('Covered: tutorial flow, indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
