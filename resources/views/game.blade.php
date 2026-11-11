@@ -91,6 +91,89 @@
             outline: 3px solid #f4d77b; outline-offset: 3px;
         }
 
+        #game-container .game-tutorial-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 40000;
+            display: grid;
+            place-items: center;
+            overflow-y: auto;
+            padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+            background: rgba(5, 13, 10, 0.82);
+            pointer-events: auto;
+            touch-action: pan-y;
+        }
+        #game-container .game-tutorial-panel {
+            width: min(660px, 100%);
+            padding: clamp(22px, 4vw, 42px);
+            border: 1px solid #718e68;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #1b3326, #101f19);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+            color: #edf5e8;
+        }
+        #game-container .game-tutorial-eyebrow {
+            margin-bottom: 14px;
+            color: #b6cf8c;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+        #game-container .game-tutorial-panel h2 {
+            margin: 0 0 18px;
+            color: #f2f6e9;
+            font-size: clamp(22px, 4vw, 32px);
+            line-height: 1.15;
+        }
+        #game-container .game-tutorial-panel p {
+            margin: 0;
+            color: #d0ddce;
+            font-size: clamp(15px, 2vw, 18px);
+            line-height: 1.65;
+        }
+        #game-container .game-tutorial-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        #game-container .game-tutorial-actions button {
+            min-height: 46px;
+            padding: 0 20px;
+            border: 1px solid #819b75;
+            border-radius: 6px;
+            background: #263f2e;
+            color: #edf5e8;
+            font: 700 13px Arial, sans-serif;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        #game-container .game-tutorial-actions button:focus-visible {
+            outline: 3px solid #f4d77b;
+            outline-offset: 3px;
+        }
+        #game-container .game-tutorial-actions .game-tutorial-primary {
+            border-color: #b5cf8d;
+            background: #b5cf8d;
+            color: #152318;
+        }
+        #game-container .game-tutorial-actions .game-tutorial-secondary {
+            background: transparent;
+            color: #d2dfcf;
+        }
+        @media (max-width: 520px) {
+            #game-container .game-tutorial-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+            #game-container .game-tutorial-actions .game-tutorial-primary {
+                grid-column: 1 / -1;
+                grid-row: 1;
+            }
+        }
+
         .game-header {
             flex: 0 0 auto;
             display: flex;
