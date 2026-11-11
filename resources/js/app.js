@@ -548,6 +548,9 @@ class WorldScene extends Phaser.Scene {
         this.touchInteract = false;
         this.touchInventory = false;
         this.touchEat = false;
+        this.touchAttack = false;
+        this.attackCooldownUntil = 0;
+        this.attackWasDown = false;
         this.audioEnabled = GameState.audioEnabled !== false;
         // Scene restarts reuse WorldScene; discard stale UI GameObject references.
         this.mapLabel = null;
@@ -1237,6 +1240,7 @@ class WorldScene extends Phaser.Scene {
             ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
             I: Phaser.Input.Keyboard.KeyCodes.I,
             F: Phaser.Input.Keyboard.KeyCodes.F,
+            SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
         });
 
         this.add.text(24, 0, 'WASD / ARROWS: MOVE  ·  I: INVENTORY', {
@@ -1646,11 +1650,11 @@ class WorldScene extends Phaser.Scene {
         if (this.isTouchLayout) {
             this.survivalText.setFontSize(11);
             this.survivalText.setWordWrapWidth(Math.max(130, Math.min(180, this.scale.width - 105)), true);
-            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')} · ${status}\nHEALTH ${health}% · HUNGER ${Math.round(this.survival.hunger)}%\nF TO EAT`);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')} · ${status}\nHEALTH ${health}% · HUNGER ${Math.round(this.survival.hunger)}%\nF EAT · ⚔ FIGHT`);
         } else {
             this.survivalText.setFontSize(13);
             this.survivalText.setWordWrapWidth(520, true);
-            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${status}\nHEALTH ${health}%  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${status}\nHEALTH ${health}%  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F EAT  ·  SPACE FIGHT`);
         }
     }
 
@@ -1676,6 +1680,8 @@ class WorldScene extends Phaser.Scene {
             const shadow = this.add.circle(0, 10, 25, 0x000000, 0.35);
             const body = this.add.circle(0, 0, 19, 0x101015, 0.98);
             const core = this.add.circle(0, -2, 10, 0x8f2929, 0.95);
+            creature.health = 100;
+            creature.bodyVisual = body;
             const eyeL = this.add.circle(-6, -5, 2.5, 0xffd6a0, 1);
             const eyeR = this.add.circle(6, -5, 2.5, 0xffd6a0, 1);
             creature.add([shadow, body, core, eyeL, eyeR]);
@@ -1704,6 +1710,39 @@ class WorldScene extends Phaser.Scene {
             this.survival.creatureAttackMs = 0;
         }
         if (this.survival.health <= 0) this.handlePlayerDeath();
+    }
+
+    attackNightCreature() {
+        const creature = this.nightCreature;
+        if (!creature?.active || this.indoorMode) return false;
+        if (!this.equipment?.hammer && !this.equipment?.crowbar) {
+            this.showMessage('You need a Hammer or Crowbar to fight. Flee and find shelter.', 'warning');
+            return false;
+        }
+        const now = this.time?.now ?? 0;
+        if (now < (this.attackCooldownUntil || 0)) return false;
+        const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, creature.x, creature.y);
+        if (distance > 88) {
+            this.showMessage('Too far away to hit. Keep moving and avoid getting cornered.', 'info');
+            this.attackCooldownUntil = now + 350;
+            return false;
+        }
+        const damage = this.equipment.hammer ? 35 : 25;
+        this.attackCooldownUntil = now + 850;
+        creature.health = Math.max(0, (creature.health ?? 100) - damage);
+        creature.bodyVisual?.setFillStyle(0xc94a3d, 1);
+        this.time?.delayedCall(130, () => {
+            if (creature.active) creature.bodyVisual?.setFillStyle(0x101015, 0.98);
+        });
+        if (creature.health <= 0) {
+            creature.destroy();
+            if (this.nightCreature === creature) this.nightCreature = null;
+            this.survival.creatureAttackMs = 0;
+            this.showMessage('Creature defeated. Do not stay exposed after a fight.', 'success');
+        } else {
+            this.showMessage(`Hit landed: ${creature.health}% creature strength remains. Fleeing is safer.`, 'warning');
+        }
+        return true;
     }
 
     handlePlayerDeath() {
@@ -1992,7 +2031,8 @@ class WorldScene extends Phaser.Scene {
             { title: 'INTERACT WITH THE WORLD', body: 'Walk close to a house, resource, workbench, or boat and press E. On touch screens, tap the E action button. Start by searching Your Home for useful supplies.' },
             { title: 'INVENTORY AND SURVIVAL', body: 'Press I to open or close your inventory. Food restores hunger; press F to eat on desktop or tap the F button on mobile. Hunger decreases over time during normal play.' },
             { title: 'CRAFT AND BUILD', body: 'Find a workbench to craft tools and process materials. A Saw is needed to harvest trees. The boat requires a Saw, Hammer, Crowbar, Screwdriver, and four construction stages.' },
-            { title: 'YOUR WAY OFF THE ISLAND', body: 'Explore all five connected regions, gather what you need, and reach Coastal Escape to finish the boat. Nights are safe. When you are ready, continue below — this exact world becomes your main game without a reload.' },
+            { title: 'NIGHT DANGER AND CREATURES', body: 'World 1 is safe, but creatures hunt during the night from World 2 onward. Running away and reaching shelter is the safest choice. If cornered, use SPACE on desktop or the ⚔ button on mobile. A Hammer hits harder than a Crowbar; you must be close to land a hit.' },
+            { title: 'YOUR WAY OFF THE ISLAND', body: 'Explore all five connected regions, gather what you need, and reach Coastal Escape to finish the boat. When you are ready, continue below — this exact world becomes your main game without a reload.' },
         ];
         const step = steps[Math.min(this.tutorialStep, steps.length - 1)];
         const layer = document.createElement('div');
@@ -2440,6 +2480,12 @@ class WorldScene extends Phaser.Scene {
         interact.on('pointerout', () => this.touchInteract = false);
         const inventory = this.add.circle(0, 86, 30, 0x263d4c, 0.9).setStrokeStyle(2, 0xb4c8d2).setInteractive();
         const inventoryLabel = this.add.text(0, 86, 'I', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        const attack = this.add.circle(-76, 0, 30, 0x713b35, 0.94).setStrokeStyle(2, 0xe5b0a4).setInteractive();
+        const attackLabel = this.add.text(-76, 0, '⚔', { fontSize: '20px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
+        attack.on('pointerdown', () => this.touchAttack = true);
+        attack.on('pointerup', () => this.touchAttack = false);
+        attack.on('pointerupoutside', () => this.touchAttack = false);
+        attack.on('pointerout', () => this.touchAttack = false);
         const eat = this.add.circle(-72, 86, 30, 0x604b2d, 0.9).setStrokeStyle(2, 0xd8b77b).setInteractive();
         const eatLabel = this.add.text(-72, 86, 'F', { fontSize: '18px', fontStyle: 'bold', color: '#fff' }).setOrigin(0.5);
         eat.on('pointerdown', () => this.touchEat = true);
@@ -2463,7 +2509,7 @@ class WorldScene extends Phaser.Scene {
         pause.on('pointerup', () => this.touchPause = false);
         pause.on('pointerupoutside', () => this.touchPause = false);
         pause.on('pointerout', () => this.touchPause = false);
-        actionRoot.add([interact, interactLabel, inventory, inventoryLabel, eat, eatLabel, pause, pauseLabel, fullscreen, fullscreenLabel]);
+        actionRoot.add([interact, interactLabel, attack, attackLabel, inventory, inventoryLabel, eat, eatLabel, pause, pauseLabel, fullscreen, fullscreenLabel]);
         this.isTouchLayout = Boolean(this.sys.game.device.input.touch || (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) || this.scale.width < 760);
         root.setVisible(this.isTouchLayout);
         actionRoot.setVisible(this.isTouchLayout);
@@ -3538,6 +3584,8 @@ THE END`, {
         if (this.menuOpen || this.endingActive || this.tutorialActive) return;
         const inventoryDown = this.keys?.I?.isDown || Boolean(this.touchInventory);
         const eatDown = this.keys?.F?.isDown || Boolean(this.touchEat);
+        const attackDown = this.keys?.SPACE?.isDown || Boolean(this.touchAttack);
+        const attackPressed = attackDown && !this.attackWasDown;
         const eatPressed = eatDown && !this.eatWasDown;
         const inventoryPressed = inventoryDown && !this.inventoryWasDown;
 
@@ -3550,6 +3598,8 @@ THE END`, {
         const interactionPressed = interactionDown && !this.interactionWasDown;
         const escapePressed = escapeDown && !this.escapeWasDown;
         if (eatPressed) this.eatFood();
+        if (attackPressed) this.attackNightCreature();
+        this.attackWasDown = attackDown;
         this.updateSurvival(delta);
         this.updateNightThreat(delta);
         if (this.survival.health <= 0 && !this.deathHandling) this.handlePlayerDeath();
