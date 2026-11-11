@@ -890,9 +890,13 @@ class WorldScene extends Phaser.Scene {
         this.indoorPrompt = this.add.text(this.scale.width / 2, this.scale.height - 90, 'E — Discover workbench inside', {
             fontFamily: 'sans-serif',
             fontSize: '16px',
-            color: '#e2f0d8',
-            backgroundColor: '#14251fdd',
-            padding: { x: 12, y: 8 },
+            fontStyle: 'bold',
+            color: '#ffffff',
+            backgroundColor: '#07120ff5',
+            padding: { x: 14, y: 10 },
+            stroke: '#000000',
+            strokeThickness: 3,
+            shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 5, fill: true },
         }).setOrigin(0.5).setScrollFactor(0).setDepth(3000);
 
         this.showMessage(`Entered ${buildingName}. Find the workbench inside.`);
@@ -1237,11 +1241,15 @@ class WorldScene extends Phaser.Scene {
             this.scale.width / 2, this.scale.height - 120, '',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '15px',
+                fontSize: '16px',
+                fontStyle: 'bold',
                 color: '#ffffff',
-                backgroundColor: '#0f1c12ff',
-                padding: { x: 14, y: 10 },
+                backgroundColor: '#07120ff5',
+                padding: { x: 16, y: 12 },
                 align: 'center',
+                stroke: '#000000',
+                strokeThickness: 3,
+                shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 5, fill: true },
             }
         )
             .setOrigin(0.5)
@@ -1319,11 +1327,14 @@ class WorldScene extends Phaser.Scene {
             this.scale.width / 2, this.scale.height - 24, '',
             {
                 fontFamily: 'sans-serif',
-                fontSize: '12px',
-                color: '#7a9a72',
-                backgroundColor: '#0f1c12cc',
-                padding: { x: 12, y: 6 },
+                fontSize: '13px',
+                fontStyle: 'bold',
+                color: '#f1f7e9',
+                backgroundColor: '#07120ff2',
+                padding: { x: 14, y: 8 },
                 align: 'center',
+                stroke: '#000000',
+                strokeThickness: 2,
             }
         )
             .setOrigin(0.5)
@@ -2931,7 +2942,8 @@ THE END`, {
             this.boatPanel.setPosition(24, h - 180);
         }
         if (this.boatText) {
-            this.boatText.setPosition(compact ? 12 : 24, compact ? 66 : 24);
+            // Move the construction tracker 20% of the viewport height downward.
+            this.boatText.setPosition(compact ? 12 : 24, (compact ? 66 : 24) + h * 0.2);
             this.refreshBoatUI();
         }
         // Contextual help boxes stay centered with a 3% safe inset on both
@@ -2941,19 +2953,19 @@ THE END`, {
         if (this.interactionPrompt) {
             this.interactionPrompt.setOrigin(0.5);
             this.interactionPrompt.setPosition(w / 2, h - (compact ? 126 : 120));
-            this.interactionPrompt.setFontSize(compact ? 12 : 15);
+            this.interactionPrompt.setFontSize(compact ? 13 : 16);
             this.interactionPrompt.setWordWrapWidth(helpSafeWidth, true);
         }
         if (this.hintTextObj) {
             this.hintTextObj.setOrigin(0.5);
             this.hintTextObj.setPosition(w / 2, h - 20);
-            this.hintTextObj.setFontSize(compact ? 10 : 12);
+            this.hintTextObj.setFontSize(compact ? 11 : 13);
             this.hintTextObj.setWordWrapWidth(helpSafeWidth, true);
         }
         if (this.indoorPrompt) {
             this.indoorPrompt.setOrigin(0.5);
             this.indoorPrompt.setPosition(w / 2, h - (compact ? 92 : 90));
-            this.indoorPrompt.setFontSize(compact ? 12 : 16);
+            this.indoorPrompt.setFontSize(compact ? 13 : 16);
             this.indoorPrompt.setWordWrapWidth(helpSafeWidth, true);
         }
 
