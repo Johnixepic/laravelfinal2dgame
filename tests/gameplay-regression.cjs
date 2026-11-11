@@ -71,6 +71,12 @@ assert.match(source, /this\.recipeScrollArea\.setY\(-270 - this\.recipeScrollOff
 assert.match(source, /\$\{ITEM_DEFS\[k\]\.name\}: \$\{this\.getItem\(k\)\}\/\$\{a\}/);
 assert.match(source, /READY TO CRAFT/);
 assert.match(source, /MISSING MATERIALS/);
+assert.match(source, /BOAT ESCAPE  •  CONSTRUCTION TASKS/);
+assert.match(source, /TOOLS CHECKLIST/);
+assert.match(source, /MATERIALS CHECKLIST/);
+assert.match(source, /NEXT ACTION/);
+assert.match(source, /Keep every objective on its own line on narrow touch screens/);
+assert.match(source, /Return to the boat and interact/);
 // TLC-026: game startup must not access Phaser's uninitialized internal pointer manager.
 assert.doesNotMatch(source, /game\.input\.manager/);
 assert.doesNotMatch(source, /pointerManager\.transformPointer/);
