@@ -33,7 +33,7 @@ assert.ok(
 );
 assert.match(update, /const step = Math\.min\(Math\.max\(delta, 0\), 50\) \/ 1000/);
 assert.match(update, /const interactionPressed = interactionDown && !this\.interactionWasDown/);
-assert.match(update, /if \(this\.menuOpen \|\| this\.endingActive\) return/);
+assert.match(update, /if \(this\.menuOpen \|\| this\.endingActive \|\| this\.tutorialActive\) return/);
 assert.match(update, /if \(escapePressed\) this\.exitIndoor\(\)/);
 assert.match(update, /this\.checkMapTransition\(\)/);
 // Map transitions are blocked while indoors and latched while changing scenes.
@@ -369,6 +369,28 @@ assert.match(ending, /color: '#c0d5b5'/);
 assert.match(ending, /color: '#a9c59b'/);
 assert.match(ending, /wordWrap: \{ width: Math\.min\(720, viewW - 48\) \}/);
 assert.match(ending, /this\.input\.keyboard\.once\('keydown-R'/);
+
+
+ // TLC-031: the tutorial overlays the live world and resumes the same run without a scene reload.
+assert.match(source, /GameState\.tutorialPending = Boolean\(tutorial\)/);
+assert.match(source, /'TUTORIAL', \(\) => this\.confirmNewGame\(true\)/);
+assert.match(source, /'HOW TO PLAY', \(\) => this\.startTutorial\(\)/);
+assert.match(source, /startTutorial\(\) \{/);
+assert.match(source, /renderTutorialStep\(\) \{/);
+assert.match(source, /finishTutorial\(skipped = false\)/);
+assert.match(source, /this\.tutorialActive = true/);
+assert.match(source, /this\.tutorialActive = false/);
+assert.match(source, /this\.player\?\.body\) this\.player\.body\.enable = false/);
+assert.match(source, /if \(this\.player\?\.body\) this\.player\.body\.enable = true/);
+assert.match(source, /ENTER THE ISLAND/);
+assert.match(source, /this\.destroyTutorialDom\(\)/);
+assert.match(source, /this\.startTutorial\(\);/);
+assert.match(source, /this\.scene\.restart\(\{ startMapId: 'MAP1'/);
+assert.doesNotMatch(source.slice(source.indexOf('    finishTutorial(skipped = false)'), source.indexOf('    startNewGame(')), /scene\.restart|scene\.start/);
+assert.match(gameView, /\.game-tutorial-overlay/);
+assert.match(gameView, /\.game-tutorial-panel/);
+assert.match(gameView, /\.game-tutorial-actions button:focus-visible/);
+assert.match(gameView, /@media \(max-width: 520px\)/);
 
 console.log('Gameplay regression checks: PASS');
 console.log('Covered: indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
