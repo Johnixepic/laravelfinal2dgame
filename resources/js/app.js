@@ -1749,7 +1749,8 @@ class WorldScene extends Phaser.Scene {
             : mode === 'title'
             ? [
                 ['NEW GAME', () => this.confirmNewGame()],
-                ['CONTINUE / LOAD SAVE', () => this.loadSavedGame()],
+                ['CONTINUE / LOAD SAVE', () => this.loadSavedGame('current')],
+                ...(this.hasSavedGame('backup') ? [['RESTORE PREVIOUS SAVE', () => this.loadSavedGame('backup')]] : []),
                 ['EXIT TO BROWSER', () => this.showMenuNotice('To exit, close this browser tab. Browsers do not let games close their own tab.')],
             ]
             : mode === 'ending'
@@ -1793,8 +1794,7 @@ class WorldScene extends Phaser.Scene {
 
         this.createMenuDomButtons(buttons, buttonStartY, buttonGap, buttonWidth, buttonHeight);
 
-        let saveExists = false;
-        try { saveExists = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { saveExists = false; }
+        const saveExists = this.hasSavedGame('current') || this.hasSavedGame('backup');
         if (mode === 'title' && !saveExists) {
             const lastButtonY = buttonStartY + (buttons.length - 1) * buttonGap;
             const note = this.add.text(0, compact ? Math.min(lastButtonY + 38, buttonAreaBottom + 12) : 165, 'No saved game found. Start a new journey.', {
@@ -1922,7 +1922,19 @@ class WorldScene extends Phaser.Scene {
         this.menuOpen = false;
         this.menuMode = null;
         GameState.tutorialPending = true;
-        try { localStorage.removeItem('tlc-save-v1'); } catch (error) { /* Starting a new run must still work if storage is blocked. */ }
+        try {
+            const existingSave = localStorage.getItem('tlc-save-v1');
+            if (existingSave) localStorage.setItem('tlc-save-backup-v1', existingSave);
+            localStorage.removeItem('tlc-save-v1');
+        } catch (error) {
+            console.error('[THE LAST CONNECTION] Could not preserve the previous save before starting fresh:', error);
+            // Do not destroy the primary save when the backup cannot be written.
+            this.menuOpen = true;
+            this.openMenu('title');
+            this.showMenuNotice('Could not protect the previous save. Browser storage may be full; your existing save was kept.');
+            GameState.started = false;
+            return false;
+        }
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
 
@@ -1990,10 +2002,20 @@ class WorldScene extends Phaser.Scene {
         }
     }
 
-    loadSavedGame() {
-        let rawSave;
+    hasSavedGame(slot = 'current') {
         try {
-            rawSave = localStorage.getItem('tlc-save-v1');
+            return Boolean(localStorage.getItem(slot === 'backup' ? 'tlc-save-backup-v1' : 'tlc-save-v1'));
+        } catch (error) {
+            console.error('[THE LAST CONNECTION] Save availability check failed:', error);
+            return false;
+        }
+    }
+
+    loadSavedGame(slot = 'current') {
+        let rawSave;
+        const saveKey = slot === 'backup' ? 'tlc-save-backup-v1' : 'tlc-save-v1';
+        try {
+            rawSave = localStorage.getItem(saveKey);
         } catch (error) {
             console.error('[THE LAST CONNECTION] Save read failed:', error);
             if (this.menuOpen) this.showMenuNotice('Cannot access browser storage. Check this site’s storage permissions.');
@@ -2011,7 +2033,7 @@ class WorldScene extends Phaser.Scene {
             save = JSON.parse(rawSave);
         } catch (error) {
             console.error('[THE LAST CONNECTION] Save data is not valid JSON:', error);
-            if (this.menuOpen) this.showMenuNotice('The saved game is damaged and cannot be loaded.');
+            if (this.menuOpen) this.showMenuNotice('The selected saved game is damaged and cannot be loaded.');
             else this.showMessage('The saved game is damaged and cannot be loaded.', 'error');
             return false;
         }
@@ -2063,7 +2085,7 @@ class WorldScene extends Phaser.Scene {
                 version: save?.version, mapId: save?.mapId, validTile, validInventory,
                 validEquipment, validBoat, validSurvival, validObjectStates,
             });
-            if (this.menuOpen) this.showMenuNotice('Saved game is incomplete or incompatible. Start a new game or use the same browser save.');
+            if (this.menuOpen) this.showMenuNotice('The selected save is incomplete or incompatible. Your other save slot has not been changed.');
             else this.showMessage('Saved game is incomplete or incompatible.', 'error');
             return false;
         }
@@ -2113,16 +2135,21 @@ class WorldScene extends Phaser.Scene {
             GameState.started = false;
             console.error('[THE LAST CONNECTION] Scene restore failed:', error);
             if (this.menuOpen) this.showMenuNotice('The save was read, but the game could not be restored. Reload the page and try again.');
-            else this.showMessage('The saved game could not be restored.', 'error');
+            else this.showMessage('The selected saved game could not be restored.', 'error');
             return false;
         }
     }
 
     returnToTitle() {
-        // Preserve the current run before switching back to the title screen.
-        this.persistCurrentRun();
+        // Never leave the active run if its latest state could not be persisted.
+        const saved = this.persistCurrentRun();
+        if (!saved) {
+            this.showMenuNotice('Could not save your progress. You are still in the game; try Save Game before returning to the title.');
+            return false;
+        }
         GameState.started = false;
         this.scene.restart({ showTitle: true });
+        return true;
     }
 
     captureCurrentMapObjectStates() {
