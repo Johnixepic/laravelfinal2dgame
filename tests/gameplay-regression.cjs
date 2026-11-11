@@ -92,6 +92,11 @@ assert.equal(
 // TLC-025: the game uses a 1920x1080 reference canvas and preserves 16:9.
 assert.match(source, /width: 1920,\s*height: 1080/);
 assert.match(source, /mode: Phaser\.Scale\.RESIZE/);
+const gameView = fs.readFileSync(path.join(__dirname, '..', 'resources', 'views', 'game.blade.php'), 'utf8');
+assert.match(gameView, /main \{[\s\S]*?position: fixed;[\s\S]*?inset: 0;/);
+assert.match(gameView, /\.game-header, \.game-footer \{ display: none !important; \}/);
+assert.match(gameView, /#game-container \{[\s\S]*?width: 100%;[\s\S]*?height: 100%;[\s\S]*?aspect-ratio: auto;/);
+assert.match(gameView, /#game-container canvas \{[\s\S]*?width: 100% !important;[\s\S]*?height: 100% !important;/);
 assert.match(source, /activePointers: 3/);
 assert.match(source, /this\.touchPause/);
 assert.match(source, /pointerupoutside/);
