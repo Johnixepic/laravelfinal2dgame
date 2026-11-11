@@ -58,7 +58,7 @@ assert.match(source, /MAP3: \{ scrap: 2, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP4: \{ scrap: 1, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 // TLC-024: the Workbench mask must cover the panel, not the world origin.
-assert.match(source, /this\.make\.graphics\(\{ x: px, y: py, add: false \}\)/);
+assert.match(source, /this\.add\.graphics\(\{ x: px, y: py, add: false \}\)/);
 assert.match(source, /Use card visibility instead of a geometry mask/);
 assert.match(source, /updateRecipeCardVisibility\(\) \{/);
 assert.match(source, /const helpSafeWidth = Math\.max\(180, w \* 0\.94\)/);
