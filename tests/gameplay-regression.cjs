@@ -404,6 +404,16 @@ assert.match(gameView, /@media \(max-width: 520px\)/);
 
 // TLC-032: balanced survival, night threat avoidance and checkpoint death recovery.
 assert.match(source, /updateNightThreat\(delta\)/);
+assert.match(source, /this\.survival\.hungerTickMs -= 15000/);
+assert.match(source, /clearNightCreatures\(\)/);
+assert.match(source, /this\.nightCreatures = \[\]/);
+assert.match(source, /creatureCount = \(\{ MAP2: 2, MAP3: 2, MAP4: 3, MAP5: 2 \}\)/);
+assert.match(source, /creature\.flankAngle = angle/);
+assert.match(source, /const flankX = this\.player\.x \+ Math\.cos\(creature\.flankAngle\) \* 30/);
+assert.match(source, /playerThreatened/);
+assert.match(source, /const creatures = \(this\.nightCreatures \|\| \[this\.nightCreature\]\)/);
+assert.match(source, /this\.nightWaveCleared = true/);
+assert.match(source, /this\.saveGame\(\{ silent: true \}\);[\s\S]*?this\.showMessage\('You woke at home/);
 assert.match(source, /elapsedMs: 120000, hunger: 100[\s\S]*day: 1, isNight: true/);
 assert.match(source, /this\.currentMapId === 'MAP1' \|\| !isNight/);
 assert.match(source, /attackNightCreature\(\)/);
@@ -424,4 +434,4 @@ assert.match(source, /starvationTickMs/);
 assert.match(source, /creatureAttackMs/);
 
 console.log('Gameplay regression checks: PASS');
-console.log('Covered: tutorial flow, indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
+console.log('Covered: tutorial flow, indoor controls, transition isolation, inventory safety, recipe outputs, boat progression, save/load restoration, death checkpoint persistence, creature flanking/combat, balanced survival timing, scene reset, regional gathering, compass HUD, Workbench rendering/scrolling and reachable map exits.');
