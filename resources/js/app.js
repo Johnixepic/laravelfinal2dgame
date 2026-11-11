@@ -597,6 +597,36 @@ class WorldScene extends Phaser.Scene {
         this.repositionUI();
         this.scale.off('resize', this.repositionUI, this);
         this.scale.on('resize', this.repositionUI, this);
+        this.installPersistenceHooks();
+    }
+
+    installPersistenceHooks() {
+        // Persist immediately when the tab is hidden or the browser is closing.
+        // localStorage is synchronous, so this is safe for a small game save.
+        this.removePersistenceHooks();
+        this._persistOnPageHide = () => this.persistCurrentRun();
+        this._persistOnVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') this.persistCurrentRun();
+        };
+        window.addEventListener('pagehide', this._persistOnPageHide);
+        document.addEventListener('visibilitychange', this._persistOnVisibilityChange);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.removePersistenceHooks());
+    }
+
+    removePersistenceHooks() {
+        if (this._persistOnPageHide) {
+            window.removeEventListener('pagehide', this._persistOnPageHide);
+            this._persistOnPageHide = null;
+        }
+        if (this._persistOnVisibilityChange) {
+            document.removeEventListener('visibilitychange', this._persistOnVisibilityChange);
+            this._persistOnVisibilityChange = null;
+        }
+    }
+
+    persistCurrentRun() {
+        if (!GameState.started || !this.player?.active || !this.obstacles?.active) return false;
+        return this.saveGame({ silent: true });
     }
 
     tilePosition(i, j) {
@@ -1659,8 +1689,12 @@ class WorldScene extends Phaser.Scene {
 
     openMenu(mode = 'pause') {
         if (this.menuOverlay) this.menuOverlay.destroy();
+        this.menuNoticeText = null;
         this.menuMode = mode;
         this.menuOpen = true;
+        // Freeze camera follow while menus are open so pointer hit-testing stays
+        // against a stable camera transform across repeated menu visits.
+        this.cameras?.main?.stopFollow();
         this.player?.setVelocity(0, 0);
         if (this.player?.body) this.player.body.enable = false;
 
@@ -1744,7 +1778,12 @@ class WorldScene extends Phaser.Scene {
             }).setOrigin(0.5);
             button.on('pointerover', () => button.setFillStyle(0x34553a));
             button.on('pointerout', () => button.setFillStyle(0x203a29));
-            button.on('pointerdown', action);
+            button.on('pointerup', () => {
+                const now = this.time?.now ?? Date.now();
+                if (now - (this.menuActionAt ?? -Infinity) < 250) return;
+                this.menuActionAt = now;
+                action();
+            });
             overlay.add([button, text]);
         });
 
@@ -1775,12 +1814,16 @@ class WorldScene extends Phaser.Scene {
 
     showMenuNotice(message) {
         if (!this.menuOverlay) return;
+        if (this.menuNoticeText?.active) {
+            this.menuNoticeText.setText(message);
+            return;
+        }
         const compact = this.isTouchLayout || this.scale.width < 760 || this.scale.height < 680;
-        const notice = this.add.text(0, compact ? this.scale.height / 2 - 48 : 195, message, {
+        this.menuNoticeText = this.add.text(0, compact ? this.scale.height / 2 - 48 : 195, message, {
             fontFamily: 'sans-serif', fontSize: compact ? '11px' : '13px', color: '#ffe08a',
             align: 'center', wordWrap: { width: Math.max(220, this.scale.width - 40) },
         }).setOrigin(0.5);
-        this.menuOverlay.add(notice);
+        this.menuOverlay.add(this.menuNoticeText);
     }
 
     closeMenu() {
@@ -1790,6 +1833,7 @@ class WorldScene extends Phaser.Scene {
         this.menuOpen = false;
         this.menuMode = null;
         if (this.player?.body) this.player.body.enable = true;
+        if (this.player?.active) this.cameras?.main?.startFollow(this.player, true, 0.08, 0.08);
         this.touchControlsRoot?.setVisible(this.isTouchLayout);
         this.touchActionRoot?.setVisible(this.isTouchLayout);
     }
@@ -2230,18 +2274,23 @@ class WorldScene extends Phaser.Scene {
         // Ensure the toast is rendered above every other scene object.
         this.children.bringToTop(this.messageText);
 
-        // Restart the lifetime so consecutive messages do not disappear early.
+        // One reusable toast only. A generation token prevents an old hide/fade
+        // callback from hiding a newer message after rapid repeated interactions.
+        const toastGeneration = this.messageGeneration = (this.messageGeneration || 0) + 1;
         this.tweens.killTweensOf(this.messageText);
         if (this.messageHideEvent) this.messageHideEvent.remove(false);
 
-        this.messageHideEvent = this.time.delayedCall(4500, () => {
+        this.messageHideEvent = this.time.delayedCall(3500, () => {
+            if (toastGeneration !== this.messageGeneration || !this.messageText?.active) return;
             this.tweens.add({
                 targets: this.messageText,
                 alpha: 0,
-                duration: 250,
+                duration: 200,
                 ease: 'Power2',
                 onComplete: () => {
-                    if (this.messageText?.active) this.messageText.setVisible(false);
+                    if (toastGeneration === this.messageGeneration && this.messageText?.active) {
+                        this.messageText.setVisible(false);
+                    }
                 },
             });
         });
@@ -3086,7 +3135,7 @@ THE END`, {
 
         // Quiet checkpoint every minute; never interrupt indoor exploration or menus.
         if (!this.indoorMode && !this.endingActive && GameState.started &&
-            this.time.now - (this.lastAutosaveAt ?? this.time.now) >= 60000) {
+            this.time.now - (this.lastAutosaveAt ?? this.time.now) >= 15000) {
             this.saveGame({ silent: true });
         }
 
