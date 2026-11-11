@@ -138,6 +138,8 @@ assert.match(persistenceGuard, /!MAPS\[this\.currentMapId\]/);
 const saveMethods = section('    saveGame({ silent = false } = {}) {', '    returnToTitle() {');
 assert.match(saveMethods, /localStorage\.setItem\('tlc-save-v1', serialized\)/);
 assert.match(saveMethods, /GameState\.objectStates = allObjectStates/);
+assert.match(saveMethods, /GameState\.inventory = this\.inventory/);
+assert.match(saveMethods, /GameState\.equipment = this\.equipment/);
 assert.match(saveMethods, /QuotaExceededError/);
 assert.match(saveMethods, /localStorage\.getItem\('tlc-save-v1'\)/);
 assert.match(saveMethods, /Save validation failed/);
@@ -269,6 +271,8 @@ const treeInteraction = section("        if (kind === 'tree') {", "            o
 assert.ok(treeInteraction.indexOf("object.getData('harvested')") < treeInteraction.indexOf("!this.equipment.saw"), 'Already-harvested tree feedback must run before the Saw requirement');
 
 assert.match(source, /const amount = itemKey === 'machinery_salvage' \? 1 : 2/);
+assert.match(source, /const boatTexture = GameState\.boatBuilt[\s\S]*?boat_stage\$\{Math\.min\(3, savedStage\)\}/);
+assert.match(source, /this\.menuActionAt = -Infinity/);
 assert.match(source, /object\.setAlpha\(0\.35\)/);
 // TLC-028: every map profile now creates collectible salvage and every salvage family can be processed.
 assert.match(source, /const preferredResourceTiles = \[\[14, 6\]/);
