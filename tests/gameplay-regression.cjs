@@ -60,8 +60,6 @@ assert.match(source, /const helpSafeWidth = Math\.max\(180, w \* 0\.94\)/);
 assert.match(source, /this\.interactionPrompt\.setOrigin\(0\.5\)/);
 assert.match(source, /this\.hintTextObj\.setOrigin\(0\.5\)/);
 assert.match(source, /this\.indoorPrompt\.setOrigin\(0\.5\)/);
-assert.match(source, /pointer\.y - \(game\.scale\.height \* 0\.05\)/);
-assert.match(source, /if \(!pointer\.wasTouch\)/);
 assert.match(source, /wordWrap: \{ width: 245 \}/);
 assert.match(source, /wordWrap: \{ width: 155 \}/);
 assert.doesNotMatch(source, /showMessage\('Workbench opened\\.'/);
@@ -73,6 +71,9 @@ assert.match(source, /this\.recipeScrollArea\.setY\(-270 - this\.recipeScrollOff
 assert.match(source, /\$\{ITEM_DEFS\[k\]\.name\}: \$\{this\.getItem\(k\)\}\/\$\{a\}/);
 assert.match(source, /READY TO CRAFT/);
 assert.match(source, /MISSING MATERIALS/);
+// TLC-026: game startup must not access Phaser's uninitialized internal pointer manager.
+assert.doesNotMatch(source, /game\.input\.manager/);
+assert.doesNotMatch(source, /pointerManager\.transformPointer/);
 // TLC-024: compass is fixed to the viewport and follows the player's cardinal heading.
 assert.match(source, /this\.createCompass\(\)/);
 assert.match(source, /createCompass\(\) \{/);
