@@ -15,7 +15,7 @@ const GameState = {
     workbenchDiscovered: false,
     started: false,
     objectStates: {},
-    survival: { elapsedMs: 0, hunger: 100, hungerTickMs: 0 },
+    survival: { elapsedMs: 0, hunger: 100, hungerTickMs: 0, health: 100, starvationTickMs: 0, creatureAttackMs: 0, deaths: 0 },
     tutorialPending: false,
 };
 
@@ -526,6 +526,9 @@ class WorldScene extends Phaser.Scene {
         // New Game and Replay must never inherit a previous victory or pause state.
         this.won = false;
         this.endingActive = false;
+        this.deathHandling = false;
+        this.nightCreature?.destroy();
+        this.nightCreature = null;
         this.menuOpen = false;
         this.menuMode = null;
         this.menuActionAt = -Infinity;
@@ -1611,9 +1614,16 @@ class WorldScene extends Phaser.Scene {
         this.survival.elapsedMs += Math.max(0, delta);
         this.survival.hungerTickMs += Math.max(0, delta);
         while (this.survival.hungerTickMs >= 15000) {
-            this.survival.hungerTickMs -= 15000;
+            this.survival.hungerTickMs -= 12000;
             this.survival.hunger = Math.max(0, this.survival.hunger - 1);
         }
+        this.survival.starvationTickMs = (this.survival.starvationTickMs || 0) + Math.max(0, delta);
+        while (this.survival.hunger <= 0 && this.survival.starvationTickMs >= 6000) {
+            this.survival.starvationTickMs -= 6000;
+            this.survival.health = Math.max(0, (this.survival.health ?? 100) - 2);
+        }
+        if (this.survival.hunger > 0) this.survival.starvationTickMs = 0;
+        this.survival.health = Phaser.Math.Clamp(this.survival.health ?? 100, 0, 100);
         GameState.survival = { ...this.survival };
         this.refreshSurvivalUI();
     }
@@ -1627,15 +1637,91 @@ class WorldScene extends Phaser.Scene {
         this.survival.day = day;
         this.survival.isNight = isNight;
         this.nightOverlay?.setVisible(isNight);
+        const health = Math.round(this.survival.health ?? 100);
+        const shelter = this.indoorMode || this.isAtHomeShelter();
+        const status = isNight ? (shelter ? 'NIGHT · SHELTERED' : 'NIGHT · DANGER') : 'DAYLIGHT';
         if (this.isTouchLayout) {
             this.survivalText.setFontSize(11);
             this.survivalText.setWordWrapWidth(Math.max(130, Math.min(180, this.scale.width - 105)), true);
-            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')} · ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}\nHUNGER ${Math.round(this.survival.hunger)}%`);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')} · ${status}\nHEALTH ${health}% · HUNGER ${Math.round(this.survival.hunger)}%\nF TO EAT`);
         } else {
             this.survivalText.setFontSize(13);
             this.survivalText.setWordWrapWidth(520, true);
-            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${isNight ? 'NIGHT (SAFE)' : 'DAYLIGHT'}  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
+            this.survivalText.setText(`DAY ${String(day).padStart(2, '0')}  ·  ${status}\nHEALTH ${health}%  ·  HUNGER ${Math.round(this.survival.hunger)}%  ·  F TO EAT`);
         }
+    }
+
+    isAtHomeShelter() {
+        if (this.currentMapId !== 'MAP1' || !this.player) return false;
+        const home = this.tilePosition(13, 13);
+        return Phaser.Math.Distance.Between(this.player.x, this.player.y, home.x, home.y) <= 190;
+    }
+
+    updateNightThreat(delta = 16) {
+        const isNight = Boolean(this.survival?.isNight);
+        const sheltered = this.indoorMode || this.isAtHomeShelter();
+        if (!isNight || sheltered || this.menuOpen || this.tutorialActive || this.endingActive) {
+            this.nightCreature?.destroy();
+            this.nightCreature = null;
+            this.survival.creatureAttackMs = 0;
+            return;
+        }
+        if (!this.nightCreature) {
+            const direction = this.player.x < this.worldW / 2 ? 1 : -1;
+            const creature = this.add.container(this.player.x + direction * 360, this.player.y - 220);
+            const shadow = this.add.circle(0, 10, 25, 0x000000, 0.35);
+            const body = this.add.circle(0, 0, 19, 0x101015, 0.98);
+            const core = this.add.circle(0, -2, 10, 0x8f2929, 0.95);
+            const eyeL = this.add.circle(-6, -5, 2.5, 0xffd6a0, 1);
+            const eyeR = this.add.circle(6, -5, 2.5, 0xffd6a0, 1);
+            creature.add([shadow, body, core, eyeL, eyeR]);
+            creature.setDepth(9000);
+            this.nightCreature = creature;
+            this.survival.creatureAttackMs = 0;
+            this.showMessage('Something is moving in the dark. Reach shelter and avoid it.', 'warning');
+        }
+        const creature = this.nightCreature;
+        const distance = Phaser.Math.Distance.Between(creature.x, creature.y, this.player.x, this.player.y);
+        const regionSpeed = ({ MAP1: 42, MAP2: 50, MAP3: 58, MAP4: 66, MAP5: 54 })[this.currentMapId] || 48;
+        const step = Math.min(Math.max(delta, 0), 50) / 1000;
+        if (distance > 1) {
+            creature.x += ((this.player.x - creature.x) / distance) * regionSpeed * step;
+            creature.y += ((this.player.y - creature.y) / distance) * regionSpeed * step;
+        }
+        if (distance <= 42) {
+            this.survival.creatureAttackMs = (this.survival.creatureAttackMs || 0) + Math.max(0, delta);
+            if (this.survival.creatureAttackMs >= 1800) {
+                this.survival.creatureAttackMs -= 1800;
+                this.survival.health = Math.max(0, (this.survival.health ?? 100) - 8);
+                this.showMessage('The creature struck you! Run for shelter.', 'error');
+                this.refreshSurvivalUI();
+            }
+        } else {
+            this.survival.creatureAttackMs = 0;
+        }
+        if (this.survival.health <= 0) this.handlePlayerDeath();
+    }
+
+    handlePlayerDeath() {
+        if (this.deathHandling) return false;
+        this.deathHandling = true;
+        // Death costs a fifth of carried supplies; permanent progression is kept.
+        for (const key of Object.keys(this.inventory || {})) {
+            const amount = Number(this.inventory[key]) || 0;
+            if (amount > 0) this.inventory[key] = Math.max(0, amount - Math.ceil(amount * 0.2));
+        }
+        this.survival.health = 100;
+        this.survival.hunger = 65;
+        this.survival.starvationTickMs = 0;
+        this.survival.creatureAttackMs = 0;
+        this.survival.deaths = (this.survival.deaths || 0) + 1;
+        GameState.inventory = this.inventory;
+        GameState.survival = { ...this.survival };
+        this.nightCreature?.destroy();
+        this.nightCreature = null;
+        this.showMessage('You died. You woke at home; some carried supplies were lost.', 'error');
+        this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 }, respawned: true });
+        return true;
     }
 
     eatFood() {
@@ -1648,7 +1734,7 @@ class WorldScene extends Phaser.Scene {
             return false;
         }
         this.removeItem('food', 1);
-        this.survival.hunger = Math.min(100, this.survival.hunger + 35);
+        this.survival.hunger = Math.min(100, this.survival.hunger + 40);
         GameState.survival = { ...this.survival };
         this.refreshSurvivalUI();
         this.showMessage('You ate some food. Hunger restored.', 'success');
@@ -2061,7 +2147,7 @@ class WorldScene extends Phaser.Scene {
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
         GameState.objectStates = {};
-        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0, day: 1, isNight: false };
+        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0, health: 100, starvationTickMs: 0, creatureAttackMs: 0, deaths: 0, day: 1, isNight: false };
         GameState.started = true;
         GameState.audioEnabled = true;
         this.won = false;
@@ -2200,7 +2286,10 @@ class WorldScene extends Phaser.Scene {
             Number.isFinite(save.survival.hunger) && save.survival.hunger >= 0 &&
             save.survival.hunger <= 100 &&
             (save.survival.hungerTickMs === undefined ||
-                (Number.isFinite(save.survival.hungerTickMs) && save.survival.hungerTickMs >= 0));
+                (Number.isFinite(save.survival.hungerTickMs) && save.survival.hungerTickMs >= 0)) &&
+            (save.survival.health === undefined || (Number.isFinite(save.survival.health) && save.survival.health >= 0 && save.survival.health <= 100)) &&
+            (save.survival.starvationTickMs === undefined || (Number.isFinite(save.survival.starvationTickMs) && save.survival.starvationTickMs >= 0)) &&
+            (save.survival.deaths === undefined || (Number.isInteger(save.survival.deaths) && save.survival.deaths >= 0));
         const validObjectStates = save?.objectStates === undefined ||
             (save.objectStates && typeof save.objectStates === 'object' &&
                 !Array.isArray(save.objectStates) &&
@@ -2241,7 +2330,11 @@ class WorldScene extends Phaser.Scene {
         const normalizedSurvival = {
             elapsedMs: save.survival.elapsedMs,
             hunger: save.survival.hunger,
-            hungerTickMs: Phaser.Math.Clamp(save.survival.hungerTickMs ?? 0, 0, 14999),
+            hungerTickMs: Phaser.Math.Clamp(save.survival.hungerTickMs ?? 0, 0, 11999),
+            health: Phaser.Math.Clamp(Number.isFinite(save.survival.health) ? save.survival.health : 100, 0, 100),
+            starvationTickMs: Phaser.Math.Clamp(save.survival.starvationTickMs ?? 0, 0, 5999),
+            creatureAttackMs: Phaser.Math.Clamp(save.survival.creatureAttackMs ?? 0, 0, 1799),
+            deaths: Math.max(0, Math.floor(save.survival.deaths || 0)),
             day: Number.isFinite(save.survival.day) ? save.survival.day : 1,
             isNight: Boolean(save.survival.isNight),
         };
@@ -3454,6 +3547,8 @@ THE END`, {
         const escapePressed = escapeDown && !this.escapeWasDown;
         if (eatPressed) this.eatFood();
         this.updateSurvival(delta);
+        this.updateNightThreat(delta);
+        if (this.deathHandling) return;
 
         // Quiet checkpoint every minute; never interrupt indoor exploration or menus.
         if (!this.indoorMode && !this.endingActive && GameState.started &&
