@@ -1812,6 +1812,7 @@ class WorldScene extends Phaser.Scene {
         this.survival.deaths = (this.survival.deaths || 0) + 1;
         GameState.inventory = this.inventory;
         GameState.survival = { ...this.survival };
+        GameState.objectStates[this.currentMapId] = this.captureCurrentMapObjectStates();
         this.clearNightCreatures();
         this.showMessage('You died. You woke at home; some carried supplies were lost.', 'error');
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 }, respawned: true });
