@@ -105,6 +105,19 @@ assert.match(gameView, /\.game-header, \.game-footer \{ display: none !important
 assert.match(gameView, /#game-container \{[\s\S]*?width: 100%;[\s\S]*?height: 100%;[\s\S]*?aspect-ratio: auto;/);
 assert.match(gameView, /#game-container canvas \{[\s\S]*?width: 100% !important;[\s\S]*?height: 100% !important;/);
 assert.match(source, /activePointers: 3/);
+const persistence = section('    installPersistenceHooks() {', '    tilePosition(i, j) {');
+assert.match(persistence, /window\.addEventListener\('pagehide'/);
+assert.match(persistence, /document\.addEventListener\('visibilitychange'/);
+assert.match(persistence, /this\.saveGame\(\{ silent: true \}\)/);
+assert.match(source, />= 15000\) \{/);
+assert.match(source, /this\.persistCurrentRun\(\);[\s\S]*?GameState\.started = false/);
+assert.match(source, /toastGeneration !== this\.messageGeneration/);
+assert.match(source, /this\.menuNoticeText\?\.active/);
+assert.match(source, /button\.on\('pointerup'/);
+assert.doesNotMatch(source, /button\.on\('pointerdown', action\)/);
+assert.match(source, /this\.cameras\?\.main\?\.stopFollow\(\)/);
+assert.match(source, /this\.cameras\?\.main\?\.startFollow\(this\.player, true, 0\.08, 0\.08\)/);
+
 assert.match(source, /this\.touchPause/);
 assert.match(source, /pointerupoutside/);
 assert.match(source, /const buttonWidth = compact \? Math\.min\(520, Math\.max\(220, w - 36\)\) : 420/);
