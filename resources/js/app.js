@@ -2714,6 +2714,10 @@ class WorldScene extends Phaser.Scene {
             this.touchActionRoot,
         ].forEach(element => element?.setVisible(false));
 
+        // Freeze the survivor and simulation while the ending is displayed.
+        this.player?.setVelocity(0, 0);
+        if (this.player?.body) this.player.body.enable = false;
+
         // Let the boat leave the shoreline without making the camera chase it
         // underneath the fixed ending card.
         this.cameras.main.stopFollow();
@@ -3225,7 +3229,7 @@ THE END`, {
 
         const interactionDown = this.keys?.E?.isDown || Boolean(this.touchInteract);
         const escapeDown = this.keys?.ESC?.isDown || Boolean(this.touchPause);
-        if (this.menuOpen) return;
+        if (this.menuOpen || this.endingActive) return;
         const inventoryDown = this.keys?.I?.isDown || Boolean(this.touchInventory);
         const eatDown = this.keys?.F?.isDown || Boolean(this.touchEat);
         const eatPressed = eatDown && !this.eatWasDown;
