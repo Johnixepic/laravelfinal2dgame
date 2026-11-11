@@ -608,6 +608,9 @@ class WorldScene extends Phaser.Scene {
         this.scale.off('resize', this.repositionUI, this);
         this.scale.on('resize', this.repositionUI, this);
         this.installPersistenceHooks();
+        if (typeof data === 'object' && data?.respawned) {
+            this.showMessage('You woke at home. Some carried supplies were lost, but your permanent progress remains.', 'warning');
+        }
     }
 
     installPersistenceHooks() {
@@ -1396,7 +1399,6 @@ class WorldScene extends Phaser.Scene {
         this.refreshSurvivalUI();
         this.createTouchControls();
         this.createGameMenu();
-        if (data?.respawned) this.showMessage('You woke at home. Some carried supplies were lost, but your permanent progress remains.', 'warning');
 
         const camW = this.cameras.main.width;
         const camH = this.cameras.main.height;
