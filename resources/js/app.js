@@ -1738,7 +1738,7 @@ class WorldScene extends Phaser.Scene {
 
         const subtitle = this.add.text(0, compact ? titleY + 38 : -185,
             mode === 'title' ? 'A survival story begins at home.'
-                : mode === 'confirm-new' ? 'Starting over replaces the current browser save.'
+                : mode === 'confirm-new' ? 'Your current save will be backed up before this fresh start.'
                 : mode === 'ending' ? 'You built a way out. Your story continues beyond the island.'
                 : 'Your progress is safe while the game is paused.',
             { fontFamily: 'sans-serif', fontSize: compact ? '12px' : '16px', color: '#a8c0a0', align: 'center', wordWrap: { width: Math.max(220, w - 40) } }
