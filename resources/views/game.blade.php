@@ -81,7 +81,11 @@
             position: absolute; inset: 0; z-index: 30000; pointer-events: none;
         }
         #game-container .game-dom-menu-button {
-            pointer-events: auto; font-size: clamp(12px, 1.2vw, 17px) !important; font-weight: 700;
+            pointer-events: auto;
+            padding: 0;
+            font-size: 0 !important;
+            color: transparent !important;
+            background: transparent;
         }
         #game-container .game-dom-menu-button:focus-visible {
             outline: 3px solid #f4d77b; outline-offset: 3px;
