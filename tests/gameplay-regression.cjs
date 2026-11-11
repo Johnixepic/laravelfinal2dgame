@@ -384,6 +384,16 @@ assert.match(source, /if \(this\.player\?\.body\) this\.player\.body\.enable = t
 assert.match(source, /ENTER THE ISLAND/);
 assert.match(source, /this\.destroyTutorialDom\(\)/);
 assert.match(source, /this\.startTutorial\(\);/);
+assert.match(source, /window\.addEventListener\('keydown', this\.tutorialKeyHandler\)/);
+assert.match(source, /window\.removeEventListener\('keydown', this\.tutorialKeyHandler\)/);
+assert.match(source, /event\.key === 'Escape'/);
+assert.match(source, /event\.key === 'ArrowRight' \|\| event\.key === 'Enter'/);
+assert.match(source, /event\.key === 'ArrowLeft'/);
+assert.match(source, /this\.escapeWasDown = true/);
+assert.match(source, /this\.interactionWasDown = false/);
+assert.match(source, /this\.touchKeys = \{ up: false, down: false, left: false, right: false \}/);
+assert.match(source, /this\.touchPause = false/);
+
 assert.match(source, /this\.scene\.restart\(\{ startMapId: 'MAP1'/);
 assert.doesNotMatch(source.slice(source.indexOf('    finishTutorial(skipped = false)'), source.indexOf('    startNewGame(')), /scene\.restart|scene\.start/);
 assert.match(gameView, /\.game-tutorial-overlay/);
