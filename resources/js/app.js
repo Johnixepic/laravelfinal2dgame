@@ -512,7 +512,7 @@ class WorldScene extends Phaser.Scene {
     create(data = {}) {
         const startMapId = typeof data === 'string'
             ? data
-            : data.startMapId || 'MAP1';
+            : data?.startMapId || 'MAP1';
 
         const startTile = typeof data === 'object' && data !== null
             ? data.startTile || null
@@ -1699,6 +1699,7 @@ class WorldScene extends Phaser.Scene {
         if (openingMenu) {
             this.menuCameraZoom = this.cameras?.main?.zoom ?? this.worldCameraZoom ?? 1;
         }
+        if (openingMenu) this.menuActionAt = -Infinity;
         this.menuMode = mode;
         this.menuOpen = true;
         // Menu controls use viewport-pixel positions. A 1:1 camera keeps
@@ -1914,13 +1915,16 @@ class WorldScene extends Phaser.Scene {
 
             // Shared state is updated only after the browser confirms the write.
             GameState.objectStates = allObjectStates;
-            GameState.inventory = save.inventory;
-            GameState.equipment = save.equipment;
-            GameState.boatStage = save.boatStage;
-            GameState.boatStagesCompleted = save.boatStagesCompleted;
-            GameState.boatBuilt = save.boatBuilt;
-            GameState.workbenchDiscovered = save.workbenchDiscovered;
-            GameState.survival = save.survival;
+            // Keep the shared state pointing at the live scene objects. Replacing
+            // these with serialized clones would leave this.inventory/equipment
+            // and GameState out of sync after a manual save.
+            GameState.inventory = this.inventory;
+            GameState.equipment = this.equipment;
+            GameState.boatStage = this.boatStage;
+            GameState.boatStagesCompleted = this.boatStagesCompleted;
+            GameState.boatBuilt = this.boatBuilt;
+            GameState.workbenchDiscovered = this.workbenchDiscovered;
+            GameState.survival = { ...this.survival };
             this.lastAutosaveAt = this.time?.now ?? 0;
             if (!silent) {
                 this.showMessage('Game saved in this browser.', 'success');
@@ -2610,10 +2614,16 @@ class WorldScene extends Phaser.Scene {
         const { i, j } = defs.boatSite;
         const dockPos = this.tilePosition(i, j);
 
+        const savedStage = Number.isInteger(GameState.boatStage)
+            ? Phaser.Math.Clamp(GameState.boatStage, 0, BOAT_STAGES.length)
+            : 0;
+        const boatTexture = GameState.boatBuilt
+            ? 'boat_stage3'
+            : `boat_stage${Math.min(3, savedStage)}`;
         this.boatSite = this.obstacles.create(
             dockPos.x,
             dockPos.y - 16,
-            'boat_stage0'
+            boatTexture
         );
         this.boatSite.setDepth(dockPos.y);
         this.boatSite.refreshBody();
