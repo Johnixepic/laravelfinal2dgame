@@ -131,12 +131,12 @@ assert.doesNotMatch(source, /button\.on\('pointerup'/);
 assert.match(source, /destroyMenuDom\(\)/);
 assert.match(source, /this\.cameras\?\.main\?\.stopFollow\(\)/);
 assert.match(source, /this\.cameras\?\.main\?\.startFollow\(this\.player, true, 0\.08, 0\.08\)/);
-const menuOpen = section('    openMenu(mode = \'pause\') {', '    confirmNewGame() {');
+const menuOpen = section('    openMenu(mode = \'pause\') {', '    confirmNewGame(tutorial = false) {');
 assert.match(menuOpen, /const openingMenu = !this\.menuOpen/);
 assert.match(menuOpen, /this\.cameras\?\.main\?\.setZoom\(1\)/);
 assert.match(menuOpen, /this\.createMenuDomButtons\(buttons, buttonStartY, buttonGap, buttonWidth, buttonHeight\)/);
 assert.doesNotMatch(menuOpen, /setInteractive\(/);
-const menuClose = section('    closeMenu() {', '    startNewGame() {');
+const menuClose = section('    closeMenu() {', '    startNewGame({ tutorial = false } = {}) {');
 assert.match(menuClose, /this\.cameras\.main\.setZoom\(this\.worldCameraZoom \|\| this\.menuCameraZoom \|\| 1\)/);
 const persistenceGuard = section('    persistCurrentRun() {', '    tilePosition(i, j) {');
 assert.doesNotMatch(persistenceGuard, /this\.obstacles\?\.active/);
@@ -210,7 +210,7 @@ assert.match(source, /GameState\.boatStagesCompleted = \[false, false, false, fa
  // TLC-026: complete game flow, browser save/load, touch support and guaranteed opening supplies.
 assert.match(source, /createGameMenu\(\) \{/);
 assert.match(source, /openMenu\(mode = 'pause'\)/);
-assert.match(source, /startNewGame\(\) \{[\s\S]*?this\.menuOverlay\?\.destroy\(\)/);
+assert.match(source, /startNewGame\(\{ tutorial = false \} = \{\}\) \{[\s\S]*?this\.menuOverlay\?\.destroy\(\)/);
 assert.match(source, /confirmNewGame\(\) \{/);
 assert.match(source, /mode === 'confirm-new'/);
 assert.match(source, /saveGame\(\{ silent = false \} = \{\}\) \{/);
