@@ -1950,9 +1950,36 @@ class WorldScene extends Phaser.Scene {
         this.tutorialDomLayer = layer;
         const firstButton = actions.querySelector('button');
         firstButton?.focus();
+
+        // Keyboard navigation is handled by the guide itself so Escape can
+        // always dismiss it and arrow keys can move between lessons.
+        this.tutorialKeyHandler = (event) => {
+            if (!this.tutorialActive || event.altKey || event.ctrlKey || event.metaKey) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.finishTutorial(true);
+            } else if (event.key === 'ArrowRight' || event.key === 'Enter') {
+                if (event.key === 'Enter' && event.target?.tagName === 'BUTTON') return;
+                event.preventDefault();
+                if (this.tutorialStep >= steps.length - 1) this.finishTutorial(false);
+                else {
+                    this.tutorialStep += 1;
+                    this.renderTutorialStep();
+                }
+            } else if (event.key === 'ArrowLeft' && this.tutorialStep > 0) {
+                event.preventDefault();
+                this.tutorialStep -= 1;
+                this.renderTutorialStep();
+            }
+        };
+        window.addEventListener('keydown', this.tutorialKeyHandler);
     }
 
     destroyTutorialDom() {
+        if (this.tutorialKeyHandler && typeof window !== 'undefined') {
+            window.removeEventListener('keydown', this.tutorialKeyHandler);
+        }
+        this.tutorialKeyHandler = null;
         if (this.tutorialDomLayer?.parentNode) this.tutorialDomLayer.parentNode.removeChild(this.tutorialDomLayer);
         this.tutorialDomLayer = null;
     }
@@ -1961,6 +1988,17 @@ class WorldScene extends Phaser.Scene {
         if (!this.tutorialActive) return;
         this.destroyTutorialDom();
         this.tutorialActive = false;
+        // Clear held input edges so a key/touch used to dismiss the guide
+        // cannot immediately move, interact, eat, or reopen a menu.
+        this.interactionWasDown = false;
+        this.escapeWasDown = false;
+        this.inventoryWasDown = false;
+        this.eatWasDown = false;
+        this.touchKeys = { up: false, down: false, left: false, right: false };
+        this.touchInteract = false;
+        this.touchInventory = false;
+        this.touchEat = false;
+        this.touchPause = false;
         if (this.player?.body) this.player.body.enable = true;
         this.player?.setVelocity(0, 0);
         this.showMessage(skipped ? 'Guide skipped. Your journey continues.' : 'Tutorial complete. Your journey begins now.', 'success');
