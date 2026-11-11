@@ -1217,7 +1217,7 @@ class WorldScene extends Phaser.Scene {
         );
         const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
         // Desktop shows 10% more of the world; touch layouts retain their current scale.
-        this.cameras.main.setZoom(responsiveZoom * (touchLayout ? 1 : 0.9));
+        this.cameras.main.setZoom(responsiveZoom * (touchLayout ? 1 : 0.7));
     }
 
     createInteractionSystem() {
@@ -3001,7 +3001,7 @@ THE END`, {
         if (this.cameras?.main) {
             const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
             // Recalculate on every resize; only desktop receives the 10% zoom-out.
-            this.cameras.main.setZoom(responsiveZoom * (this.isTouchLayout ? 1 : 0.9));
+            this.cameras.main.setZoom(responsiveZoom * (this.isTouchLayout ? 1 : 0.7));
         }
         if (this.menuOpen && this.menuMode && this.menuOverlay) this.openMenu(this.menuMode);
     }
