@@ -1663,7 +1663,8 @@ class WorldScene extends Phaser.Scene {
     updateNightThreat(delta = 16) {
         const isNight = Boolean(this.survival?.isNight);
         const sheltered = this.indoorMode || this.isAtHomeShelter();
-        if (!isNight || sheltered || this.menuOpen || this.tutorialActive || this.endingActive) {
+        // World 1 is the safe starting region: night is visible, but threats begin in World 2.
+        if (this.currentMapId === 'MAP1' || !isNight || sheltered || this.menuOpen || this.tutorialActive || this.endingActive) {
             this.nightCreature?.destroy();
             this.nightCreature = null;
             this.survival.creatureAttackMs = 0;
@@ -2150,7 +2151,7 @@ class WorldScene extends Phaser.Scene {
         GameState.boatBuilt = false;
         GameState.workbenchDiscovered = false;
         GameState.objectStates = {};
-        GameState.survival = { elapsedMs: 0, hunger: 100, hungerTickMs: 0, health: 100, starvationTickMs: 0, creatureAttackMs: 0, deaths: 0, day: 1, isNight: false };
+        GameState.survival = { elapsedMs: 120000, hunger: 100, hungerTickMs: 0, health: 100, starvationTickMs: 0, creatureAttackMs: 0, deaths: 0, day: 1, isNight: true };
         GameState.started = true;
         GameState.audioEnabled = true;
         this.won = false;
