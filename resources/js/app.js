@@ -3223,11 +3223,11 @@ THE END`, {
         const body = this.player?.body;
         if (!body) return;
 
-        const interactionDown = this.keys.E.isDown || Boolean(this.touchInteract);
-        const escapeDown = this.keys.ESC.isDown || Boolean(this.touchPause);
+        const interactionDown = this.keys?.E?.isDown || Boolean(this.touchInteract);
+        const escapeDown = this.keys?.ESC?.isDown || Boolean(this.touchPause);
         if (this.menuOpen) return;
-        const inventoryDown = this.keys.I.isDown || Boolean(this.touchInventory);
-        const eatDown = this.keys.F.isDown || Boolean(this.touchEat);
+        const inventoryDown = this.keys?.I?.isDown || Boolean(this.touchInventory);
+        const eatDown = this.keys?.F?.isDown || Boolean(this.touchEat);
         const eatPressed = eatDown && !this.eatWasDown;
         const inventoryPressed = inventoryDown && !this.inventoryWasDown;
 
@@ -3450,10 +3450,10 @@ THE END`, {
         let dx = 0;
         let dy = 0;
 
-        if (this.cursors.left.isDown || this.keys.A.isDown || this.touchKeys?.left) dx -= 1;
-        if (this.cursors.right.isDown || this.keys.D.isDown || this.touchKeys?.right) dx += 1;
-        if (this.cursors.up.isDown || this.keys.W.isDown || this.touchKeys?.up) dy -= 1;
-        if (this.cursors.down.isDown || this.keys.S.isDown || this.touchKeys?.down) dy += 1;
+        if (this.cursors?.left?.isDown || this.keys?.A?.isDown || this.touchKeys?.left) dx -= 1;
+        if (this.cursors?.right?.isDown || this.keys?.D?.isDown || this.touchKeys?.right) dx += 1;
+        if (this.cursors?.up?.isDown || this.keys?.W?.isDown || this.touchKeys?.up) dy -= 1;
+        if (this.cursors?.down?.isDown || this.keys?.S?.isDown || this.touchKeys?.down) dy += 1;
 
         if (dx !== 0 && dy !== 0) {
             const length = Math.hypot(dx, dy);
