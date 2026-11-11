@@ -404,6 +404,8 @@ assert.match(gameView, /@media \(max-width: 520px\)/);
 
 // TLC-032: balanced survival, night threat avoidance and checkpoint death recovery.
 assert.match(source, /updateNightThreat\(delta\)/);
+assert.match(source, /elapsedMs: 120000, hunger: 100[\s\S]*day: 1, isNight: true/);
+assert.match(source, /this\.currentMapId === 'MAP1' \|\| !isNight/);
 assert.match(source, /NIGHT · DANGER/);
 assert.match(source, /isAtHomeShelter\(\)/);
 assert.match(source, /this\.survival\.health = Math\.max\(0, \(this\.survival\.health \?\? 100\) - 8\)/);
