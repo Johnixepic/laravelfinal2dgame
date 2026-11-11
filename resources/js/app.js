@@ -1410,7 +1410,7 @@ class WorldScene extends Phaser.Scene {
                 fontSize: '14px',
                 fontStyle: 'bold',
                 color: canCraft ? '#e2f0d8' : '#7a8a72',
-                wordWrap: { width: 330 },
+                wordWrap: { width: 245 },
             });
             card.add(nameText);
             card.setData('nameText', nameText);
@@ -1423,22 +1423,22 @@ class WorldScene extends Phaser.Scene {
                     fontFamily: 'sans-serif',
                     fontSize: '13px',
                     color: canCraft ? '#c8dcc0' : '#5a6a52',
-                    wordWrap: { width: 330 },
+                    wordWrap: { width: 245 },
                 }
             );
             card.add(ingredientText);
             card.setData('ingredientText', ingredientText);
 
             const descText = this.add.text(
-                275,
+                270,
                 -20,
                 `${recipe.desc}\n${canCraft ? 'READY TO CRAFT' : 'MISSING MATERIALS'}`,
                 {
                     fontFamily: 'sans-serif',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     color: canCraft ? '#a8c0a0' : '#8a927f',
                     align: 'right',
-                    wordWrap: { width: 190 },
+                    wordWrap: { width: 155 },
                 }
             ).setOrigin(1, 0);
             card.add(descText);
@@ -2367,7 +2367,8 @@ class WorldScene extends Phaser.Scene {
 
             this.craftingOpen = true;
             this.craftingPanel.setVisible(true);
-            this.showMessage('Workbench opened.');
+            // The workbench title already confirms the panel opened; avoid a toast
+            // colliding with the heading at the top of the panel.
             return;
         }
 
@@ -3275,6 +3276,21 @@ if (gameContainer) {
         },
         scene: [WorldScene],
     });
+
+    // Small vertical correction for the observed cursor/hit-target mismatch.
+    // Apply after Phaser maps browser coordinates into game coordinates.
+    const pointerManager = game.input.manager;
+    if (typeof pointerManager.transformPointer === 'function') {
+        const originalTransformPointer = pointerManager.transformPointer.bind(pointerManager);
+        pointerManager.transformPointer = (pointer, pageX, pageY, wasMove) => {
+            originalTransformPointer(pointer, pageX, pageY, wasMove);
+            pointer.y = Phaser.Math.Clamp(
+                pointer.y - (game.scale.height * 0.05),
+                0,
+                game.scale.height
+            );
+        };
+    }
 
     // Re-measure the canvas after the page's flex/aspect-ratio layout settles.
     // This keeps Phaser's pointer coordinate transform in sync with its DOM bounds.
