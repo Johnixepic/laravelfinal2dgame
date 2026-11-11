@@ -2036,6 +2036,7 @@ class WorldScene extends Phaser.Scene {
 
         this.inventory[key] = current + added;
         this.refreshInventoryUI();
+        this.refreshBoatUI();
         this.playSfx('pickup');
 
         if (added < amount) {
@@ -2055,6 +2056,7 @@ class WorldScene extends Phaser.Scene {
 
         this.inventory[key] = current - amount;
         this.refreshInventoryUI();
+        this.refreshBoatUI();
         return true;
     }
 
@@ -2646,64 +2648,69 @@ THE END`, {
     }
 
     refreshBoatUI() {
+        if (!this.boatText?.active) return;
+
+        const requiredTools = ['saw', 'hammer', 'crowbar', 'screwdriver'];
+        const toolLabels = { saw: 'Saw', hammer: 'Hammer', crowbar: 'Crowbar', screwdriver: 'Screwdriver' };
+        const missingTools = requiredTools.filter(key => !this.equipment[key]);
+        const stage = BOAT_STAGES[this.boatStage];
         const lines = ['BOAT CONSTRUCTION', ''];
-        let missingAny = false;
-
-        for (let i = 0; i < BOAT_STAGES.length; i++) {
-            const stage = BOAT_STAGES[i];
-            const done = this.boatStagesCompleted[i];
-            const current = i === this.boatStage && !this.boatBuilt;
-
-            const resourceRows = Object.entries(stage.ingredients).map(([k, a]) => {
-                const available = this.inventory[k] || 0;
-                const cap = ITEM_DEFS[k]?.limit ?? '?';
-                const hasEnough = available >= a;
-                if (!done && !hasEnough) missingAny = true;
-                return `    ${ITEM_DEFS[k].name}: ${available}/${cap}  (need ${a})`;
-            });
-
-            const icon = done ? '✔' : (current ? '►' : '○');
-            lines.push(`${icon}  ${stage.name}`);
-            lines.push(...resourceRows);
-
-            if (current && !done) {
-                const missing = Object.entries(stage.ingredients)
-                    .filter(([k, a]) => (this.inventory[k] || 0) < a)
-                    .map(([k, a]) => `${a - (this.inventory[k] || 0)} ${ITEM_DEFS[k].name}`);
-                if (missing.length > 0) {
-                    lines.push(`    ⚠ Missing: ${missing.join(', ')}`);
-                }
-            }
-        }
 
         if (this.boatBuilt) {
-            lines.push('');
-            lines.push('✔ ALL STAGES COMPLETE — the boat is seaworthy!');
+            lines.push('STATUS: READY TO SAIL');
+            lines.push('All four construction stages are complete.');
+            lines.push('NEXT TASK: Reach the boat on the Coastal Escape.');
+            lines.push('Interact with it again to depart.');
         } else {
-            const allDone = BOAT_STAGES.every((_, i) => this.boatStagesCompleted[i]);
-            if (!allDone) {
-                lines.push(missingAny ? '  (gather more resources to continue)' : '');
+            lines.push(`OVERALL: ${this.boatStagesCompleted.filter(Boolean).length}/${BOAT_STAGES.length} stages complete`);
+            lines.push(`CURRENT TASK: ${stage?.name || 'Complete construction'}`);
+            lines.push(stage?.desc || 'Finish preparing the boat to escape.');
+
+            lines.push('', 'TOOLS');
+            for (const key of requiredTools) {
+                lines.push(`${this.equipment[key] ? '✔' : '✖'} ${toolLabels[key]}`);
+            }
+
+            lines.push('', 'MATERIALS NEEDED');
+            if (stage) {
+                for (const [key, amount] of Object.entries(stage.ingredients)) {
+                    const available = this.inventory[key] || 0;
+                    const remaining = Math.max(0, amount - available);
+                    lines.push(`${available >= amount ? '✔' : '✖'} ${ITEM_DEFS[key].name}: ${available}/${amount}${remaining ? ` (need ${remaining} more)` : ' (ready)'}`);
+                }
+            }
+
+            if (missingTools.length) {
+                lines.push('', `NEXT: Craft ${missingTools.map(key => toolLabels[key]).join(', ')} at a workbench.`);
+            } else if (stage) {
+                const missingMaterials = Object.entries(stage.ingredients)
+                    .filter(([key, amount]) => (this.inventory[key] || 0) < amount);
+                lines.push('', missingMaterials.length
+                    ? 'NEXT: Gather the missing materials, then return to the boat.'
+                    : 'NEXT: Return to the boat and interact to build this stage.');
             }
         }
 
         if (this.isTouchLayout) {
-            const stage = BOAT_STAGES[this.boatStage];
             const compactLines = this.boatBuilt
-                ? ['BOAT READY', 'Reach the final shore and tap INTERACT to sail.']
+                ? ['BOAT READY', 'Reach the boat on Coastal Escape.', 'Tap INTERACT to sail.']
                 : [
-                    `BOAT ${this.boatStage + 1}/${BOAT_STAGES.length}: ${stage.name}`,
-                    ...Object.entries(stage.ingredients).map(([key, amount]) =>
+                    `TASK ${this.boatStage + 1}/${BOAT_STAGES.length}: ${stage?.name || 'Construction'}`,
+                    ...requiredTools.map(key => `${this.equipment[key] ? '✔' : '✖'} ${toolLabels[key]}`),
+                    ...(stage ? Object.entries(stage.ingredients).map(([key, amount]) =>
                         `${ITEM_DEFS[key].name}: ${this.inventory[key] || 0}/${amount}`
-                    ),
-                    'Gather materials to continue.',
+                    ) : []),
+                    missingTools.length
+                        ? `NEXT: Craft ${missingTools.map(key => toolLabels[key]).join(', ')}.`
+                        : 'NEXT: Gather materials, then interact with the boat.',
                 ];
-            this.boatText.setText(compactLines.join('\n'));
+            this.boatText.setText(compactLines.join('\\n'));
             this.boatText.setFontSize(10);
             this.boatText.setWordWrapWidth(Math.max(125, Math.min(185, this.scale.width - 105)), true);
         } else {
-            this.boatText.setText(lines.join('\n'));
+            this.boatText.setText(lines.join('\\n'));
             this.boatText.setFontSize(12);
-            this.boatText.setWordWrapWidth(220, true);
+            this.boatText.setWordWrapWidth(250, true);
         }
     }
 
@@ -2929,11 +2936,21 @@ THE END`, {
 
         const compact = this.isTouchLayout || w < 760 || h < 700;
         const inventoryScale = compact ? Math.min(1, (w - 24) / 480, (h - 24) / 640) : 1;
+        // Shift the inventory 15% of the viewport width to the right,
+        // while clamping its center so the panel remains fully on-screen.
+        const inventoryHalfWidth = 240 * inventoryScale;
+        const inventoryBaseX = compact ? w / 2 : w - 400;
+        const inventoryCenterX = Phaser.Math.Clamp(
+            inventoryBaseX + w * 0.15,
+            inventoryHalfWidth + 12,
+            w - inventoryHalfWidth - 12
+        );
+        const inventoryCenterY = compact ? h / 2 : 440;
         if (this.inventoryPanel) {
-            this.inventoryPanel.setPosition(compact ? w / 2 : w - 400, compact ? h / 2 : 440).setScale(inventoryScale);
+            this.inventoryPanel.setPosition(inventoryCenterX, inventoryCenterY).setScale(inventoryScale);
         }
         if (this.inventoryText) {
-            this.inventoryText.setPosition(compact ? w / 2 - 210 * inventoryScale : w - 620, compact ? h / 2 - 300 * inventoryScale : 135);
+            this.inventoryText.setPosition(inventoryCenterX - 210 * inventoryScale, compact ? h / 2 - 300 * inventoryScale : 135);
             this.inventoryText.setScale(inventoryScale);
             this.inventoryText.setWordWrapWidth(420, true);
         }
