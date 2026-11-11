@@ -3284,11 +3284,14 @@ if (gameContainer) {
         const originalTransformPointer = pointerManager.transformPointer.bind(pointerManager);
         pointerManager.transformPointer = (pointer, pageX, pageY, wasMove) => {
             originalTransformPointer(pointer, pageX, pageY, wasMove);
-            pointer.y = Phaser.Math.Clamp(
-                pointer.y - (game.scale.height * 0.05),
-                0,
-                game.scale.height
-            );
+            // Keep touch controls at their native coordinates; correct mouse only.
+            if (!pointer.wasTouch) {
+                pointer.y = Phaser.Math.Clamp(
+                    pointer.y - (game.scale.height * 0.05),
+                    0,
+                    game.scale.height
+                );
+            }
         };
     }
 
