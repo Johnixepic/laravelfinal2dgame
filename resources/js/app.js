@@ -3312,23 +3312,8 @@ if (gameContainer) {
         scene: [WorldScene],
     });
 
-    // Small vertical correction for the observed cursor/hit-target mismatch.
-    // Apply after Phaser maps browser coordinates into game coordinates.
-    const pointerManager = game.input.manager;
-    if (typeof pointerManager.transformPointer === 'function') {
-        const originalTransformPointer = pointerManager.transformPointer.bind(pointerManager);
-        pointerManager.transformPointer = (pointer, pageX, pageY, wasMove) => {
-            originalTransformPointer(pointer, pageX, pageY, wasMove);
-            // Keep touch controls at their native coordinates; correct mouse only.
-            if (!pointer.wasTouch) {
-                pointer.y = Phaser.Math.Clamp(
-                    pointer.y - (game.scale.height * 0.05),
-                    0,
-                    game.scale.height
-                );
-            }
-        };
-    }
+    // Do not patch Phaser's internal pointer manager here: it is not ready
+    // synchronously after construction and its internals vary by Phaser version.
 
     // Re-measure the canvas after the page's flex/aspect-ratio layout settles.
     // This keeps Phaser's pointer coordinate transform in sync with its DOM bounds.
