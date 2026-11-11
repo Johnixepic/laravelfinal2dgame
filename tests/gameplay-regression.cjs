@@ -57,6 +57,7 @@ assert.match(source, /this\.make\.graphics\(\{ x: px, y: py, add: false \}\)/);
 assert.match(source, /Use card visibility instead of a geometry mask/);
 assert.match(source, /updateRecipeCardVisibility\(\) \{/);
 assert.match(source, /pointer\.y - \(game\.scale\.height \* 0\.05\)/);
+assert.match(source, /if \(!pointer\.wasTouch\)/);
 assert.match(source, /wordWrap: \{ width: 245 \}/);
 assert.match(source, /wordWrap: \{ width: 155 \}/);
 assert.doesNotMatch(source, /showMessage\('Workbench opened\\.'/);
