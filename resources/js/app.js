@@ -527,8 +527,8 @@ class WorldScene extends Phaser.Scene {
         this.won = false;
         this.endingActive = false;
         this.deathHandling = false;
-        this.nightCreature?.destroy();
-        this.nightCreature = null;
+        this.clearNightCreatures();
+        this.nightWaveCleared = false;
         this.menuOpen = false;
         this.menuMode = null;
         this.menuActionAt = -Infinity;
@@ -613,6 +613,8 @@ class WorldScene extends Phaser.Scene {
         this.installPersistenceHooks();
         if (typeof data === 'object' && data?.respawned) {
             this.showMessage('You woke at home. Some carried supplies were lost, but your permanent progress remains.', 'warning');
+            // Persist the checkpoint after the respawn scene rebuilds the player at home.
+            this.saveGame({ silent: true });
         }
     }
 
@@ -1621,7 +1623,7 @@ class WorldScene extends Phaser.Scene {
         this.survival.elapsedMs += Math.max(0, delta);
         this.survival.hungerTickMs += Math.max(0, delta);
         while (this.survival.hungerTickMs >= 15000) {
-            this.survival.hungerTickMs -= 12000;
+            this.survival.hungerTickMs -= 15000;
             this.survival.hunger = Math.max(0, this.survival.hunger - 1);
         }
         this.survival.starvationTickMs = (this.survival.starvationTickMs || 0) + Math.max(0, delta);
@@ -1664,46 +1666,88 @@ class WorldScene extends Phaser.Scene {
         return Phaser.Math.Distance.Between(this.player.x, this.player.y, home.x, home.y) <= 190;
     }
 
+    clearNightCreatures() {
+        const activeCreatures = new Set([
+            ...(this.nightCreatures || []),
+            this.nightCreature,
+        ].filter(Boolean));
+        activeCreatures.forEach(creature => creature.destroy());
+        this.nightCreatures = [];
+        this.nightCreature = null;
+    }
+
     updateNightThreat(delta = 16) {
         const isNight = Boolean(this.survival?.isNight);
         const sheltered = this.indoorMode || this.isAtHomeShelter();
-        // World 1 is the safe starting region: night is visible, but threats begin in World 2.
-        if (this.currentMapId === 'MAP1' || !isNight || sheltered || this.menuOpen || this.tutorialActive || this.endingActive) {
-            this.nightCreature?.destroy();
-            this.nightCreature = null;
+
+        // World 1 is a safe introduction area. Daylight also resets the next night wave.
+        if (this.currentMapId === 'MAP1' || !isNight) {
+            this.clearNightCreatures();
+            this.survival.creatureAttackMs = 0;
+            if (!isNight) this.nightWaveCleared = false;
+            return;
+        }
+        if (sheltered) {
+            this.clearNightCreatures();
             this.survival.creatureAttackMs = 0;
             return;
         }
-        if (!this.nightCreature) {
-            const direction = this.player.x < this.worldW / 2 ? 1 : -1;
-            const creature = this.add.container(this.player.x + direction * 360, this.player.y - 220);
-            const shadow = this.add.circle(0, 10, 25, 0x000000, 0.35);
-            const body = this.add.circle(0, 0, 19, 0x101015, 0.98);
-            const core = this.add.circle(0, -2, 10, 0x8f2929, 0.95);
-            creature.health = 100;
-            creature.bodyVisual = body;
-            const eyeL = this.add.circle(-6, -5, 2.5, 0xffd6a0, 1);
-            const eyeR = this.add.circle(6, -5, 2.5, 0xffd6a0, 1);
-            creature.add([shadow, body, core, eyeL, eyeR]);
-            creature.setDepth(9000);
-            this.nightCreature = creature;
+        if (this.menuOpen || this.tutorialActive || this.endingActive) return;
+
+        // Later regions are more dangerous: two creatures in World 2, three in
+        // the wilderness, and two at the final coast. They approach from different
+        // angles and try to flank instead of stacking on one another.
+        if ((!this.nightCreatures || this.nightCreatures.length === 0) && !this.nightWaveCleared) {
+            const creatureCount = ({ MAP2: 2, MAP3: 2, MAP4: 3, MAP5: 2 })[this.currentMapId] || 1;
+            const regionSpeed = ({ MAP2: 48, MAP3: 54, MAP4: 60, MAP5: 52 })[this.currentMapId] || 48;
+            this.nightCreatures = [];
+            for (let index = 0; index < creatureCount; index++) {
+                const angle = (Math.PI * 2 * index / creatureCount) + Math.PI / 4;
+                const spawnX = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * 300, 80, this.worldW - 80);
+                const spawnY = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * 230, 80, this.worldH - 80);
+                const creature = this.add.container(spawnX, spawnY);
+                const shadow = this.add.circle(0, 10, 25, 0x000000, 0.35);
+                const body = this.add.circle(0, 0, 19, 0x101015, 0.98);
+                const core = this.add.circle(0, -2, 10, 0x8f2929, 0.95);
+                const eyeL = this.add.circle(-6, -5, 2.5, 0xffd6a0, 1);
+                const eyeR = this.add.circle(6, -5, 2.5, 0xffd6a0, 1);
+                creature.add([shadow, body, core, eyeL, eyeR]);
+                creature.health = 100;
+                creature.bodyVisual = body;
+                creature.flankAngle = angle;
+                creature.regionSpeed = regionSpeed;
+                creature.setDepth(spawnY);
+                this.nightCreatures.push(creature);
+            }
+            this.nightCreature = this.nightCreatures[0] || null;
             this.survival.creatureAttackMs = 0;
-            this.showMessage('Something is moving in the dark. Reach shelter and avoid it.', 'warning');
+            this.showMessage('Movement in the dark! Creatures are flanking you. Fleeing is safer than fighting.', 'warning');
         }
-        const creature = this.nightCreature;
-        const distance = Phaser.Math.Distance.Between(creature.x, creature.y, this.player.x, this.player.y);
-        const regionSpeed = ({ MAP1: 42, MAP2: 50, MAP3: 58, MAP4: 66, MAP5: 54 })[this.currentMapId] || 48;
+
         const step = Math.min(Math.max(delta, 0), 50) / 1000;
-        if (distance > 1) {
-            creature.x += ((this.player.x - creature.x) / distance) * regionSpeed * step;
-            creature.y += ((this.player.y - creature.y) / distance) * regionSpeed * step;
+        let playerThreatened = false;
+        for (const creature of (this.nightCreatures || [])) {
+            if (!creature?.active) continue;
+            const flankX = this.player.x + Math.cos(creature.flankAngle) * 30;
+            const flankY = this.player.y + Math.sin(creature.flankAngle) * 24;
+            const targetDistance = Phaser.Math.Distance.Between(creature.x, creature.y, flankX, flankY);
+            if (targetDistance > 1) {
+                creature.x += ((flankX - creature.x) / targetDistance) * creature.regionSpeed * step;
+                creature.y += ((flankY - creature.y) / targetDistance) * creature.regionSpeed * step;
+            }
+            creature.setDepth(creature.y);
+            if (Phaser.Math.Distance.Between(creature.x, creature.y, this.player.x, this.player.y) <= 52) {
+                playerThreatened = true;
+            }
         }
-        if (distance <= 42) {
+
+        // A shared attack timer prevents a swarm from multiplying damage into an unavoidable death.
+        if (playerThreatened) {
             this.survival.creatureAttackMs = (this.survival.creatureAttackMs || 0) + Math.max(0, delta);
             if (this.survival.creatureAttackMs >= 1800) {
                 this.survival.creatureAttackMs -= 1800;
                 this.survival.health = Math.max(0, (this.survival.health ?? 100) - 8);
-                this.showMessage('The creature struck you! Run for shelter.', 'error');
+                this.showMessage('The creatures caught you! Break away and reach shelter.', 'error');
                 this.refreshSurvivalUI();
             }
         } else {
@@ -1713,34 +1757,42 @@ class WorldScene extends Phaser.Scene {
     }
 
     attackNightCreature() {
-        const creature = this.nightCreature;
-        if (!creature?.active || this.indoorMode) return false;
+        const creatures = (this.nightCreatures || [this.nightCreature]).filter(creature => creature?.active);
+        if (creatures.length === 0 || this.indoorMode) return false;
         if (!this.equipment?.hammer && !this.equipment?.crowbar) {
             this.showMessage('You need a Hammer or Crowbar to fight. Flee and find shelter.', 'warning');
             return false;
         }
         const now = this.time?.now ?? 0;
         if (now < (this.attackCooldownUntil || 0)) return false;
-        const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, creature.x, creature.y);
-        if (distance > 88) {
+        const nearest = creatures.reduce((best, candidate) => {
+            const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, candidate.x, candidate.y);
+            return !best || distance < best.distance ? { creature: candidate, distance } : best;
+        }, null);
+        if (!nearest || nearest.distance > 88) {
             this.showMessage('Too far away to hit. Keep moving and avoid getting cornered.', 'info');
             this.attackCooldownUntil = now + 350;
             return false;
         }
+        const target = nearest.creature;
         const damage = this.equipment.hammer ? 35 : 25;
         this.attackCooldownUntil = now + 850;
-        creature.health = Math.max(0, (creature.health ?? 100) - damage);
-        creature.bodyVisual?.setFillStyle(0xc94a3d, 1);
+        target.health = Math.max(0, (target.health ?? 100) - damage);
+        target.bodyVisual?.setFillStyle(0xc94a3d, 1);
         this.time?.delayedCall(130, () => {
-            if (creature.active) creature.bodyVisual?.setFillStyle(0x101015, 0.98);
+            if (target.active) target.bodyVisual?.setFillStyle(0x101015, 0.98);
         });
-        if (creature.health <= 0) {
-            creature.destroy();
-            if (this.nightCreature === creature) this.nightCreature = null;
+        if (target.health <= 0) {
+            target.destroy();
+            this.nightCreatures = this.nightCreatures.filter(item => item !== target && item.active);
+            this.nightCreature = this.nightCreatures[0] || null;
             this.survival.creatureAttackMs = 0;
-            this.showMessage('Creature defeated. Do not stay exposed after a fight.', 'success');
+            if (this.nightCreatures.length === 0) this.nightWaveCleared = true;
+            this.showMessage(this.nightCreatures.length
+                ? `Creature defeated. ${this.nightCreatures.length} still hunting you — fleeing is safer.`
+                : 'Creature wave defeated. Do not stay exposed after a fight.', 'success');
         } else {
-            this.showMessage(`Hit landed: ${creature.health}% creature strength remains. Fleeing is safer.`, 'warning');
+            this.showMessage(`Hit landed: ${target.health}% creature strength remains. Fleeing is safer.`, 'warning');
         }
         return true;
     }
@@ -1760,8 +1812,7 @@ class WorldScene extends Phaser.Scene {
         this.survival.deaths = (this.survival.deaths || 0) + 1;
         GameState.inventory = this.inventory;
         GameState.survival = { ...this.survival };
-        this.nightCreature?.destroy();
-        this.nightCreature = null;
+        this.clearNightCreatures();
         this.showMessage('You died. You woke at home; some carried supplies were lost.', 'error');
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 }, respawned: true });
         return true;
