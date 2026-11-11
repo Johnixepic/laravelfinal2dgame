@@ -2527,119 +2527,106 @@ class WorldScene extends Phaser.Scene {
         if (this.endingActive) return;
         this.endingActive = true;
 
-        // Animate the completed boat leaving shore before the ending card appears.
+        // Clear gameplay HUD immediately so the ending has a clean visual hierarchy.
+        [
+            this.boatText,
+            this.inventoryPanel,
+            this.inventoryText,
+            this.compassRoot,
+            this.survivalText,
+            this.mapLabel,
+            this.interactionPrompt,
+            this.hintTextObj,
+            this.messageText,
+            this.touchControlsRoot,
+            this.touchActionRoot,
+        ].forEach(element => element?.setVisible(false));
+
+        // Let the boat leave the shoreline without making the camera chase it
+        // underneath the fixed ending card.
+        this.cameras.main.stopFollow();
         if (this.boatSite) {
-            this.cameras.main.stopFollow();
-            this.cameras.main.startFollow(this.boatSite, true, 0.05, 0.05);
             this.tweens.add({
                 targets: this.boatSite,
                 x: this.boatSite.x + 620,
                 y: this.boatSite.y - 150,
+                alpha: 0,
                 duration: 2600,
                 ease: 'Sine.easeInOut',
             });
         }
 
-        // Create ending overlay
         const viewW = this.scale.width;
         const viewH = this.scale.height;
+        const compact = viewW < 760 || viewH < 620;
         const overlay = this.add.container(viewW / 2, viewH / 2);
         overlay.setScrollFactor(0);
-        overlay.setDepth(5000);
+        overlay.setDepth(20000);
 
-        const bg = this.add.rectangle(0, 0, viewW, viewH, 0x0a1a12, 0);
+        // Near-opaque backdrop prevents terrain and remaining world sprites
+        // from reducing the contrast of the victory text.
+        const bg = this.add.rectangle(0, 0, viewW, viewH, 0x07120f, 0.96);
         overlay.add(bg);
 
-        const title = this.add.text(0, -180, 'THE LAST CONNECTION', {
+        const title = this.add.text(0, compact ? -130 : -165, 'THE LAST CONNECTION', {
             fontFamily: 'sans-serif',
-            fontSize: '36px',
+            fontSize: compact ? '25px' : '38px',
             fontStyle: 'bold',
-            color: '#e2f0d8',
+            color: '#f1f7e9',
+            align: 'center',
+            wordWrap: { width: viewW - 48 },
         }).setOrigin(0.5);
         overlay.add(title);
 
-        const subtitle = this.add.text(0, -100, 'You built the boat. You found your way to the coast.', {
+        const subtitle = this.add.text(0, compact ? -65 : -85, 'You built the boat. You found your way to the coast.', {
             fontFamily: 'sans-serif',
-            fontSize: '18px',
-            color: '#a8c0a0',
+            fontSize: compact ? '14px' : '20px',
+            color: '#d0e2c4',
+            align: 'center',
+            wordWrap: { width: viewW - 48 },
         }).setOrigin(0.5);
         overlay.add(subtitle);
 
-        const body = this.add.text(0, -20, `The horizon stretches endlessly ahead.
+        const body = this.add.text(0, compact ? 5 : 5, `The horizon stretches endlessly ahead.
 All the resources you gathered, every path you walked,
 led to this moment.
 
 THE END`, {
             fontFamily: 'sans-serif',
-            fontSize: '15px',
-            color: '#7a9a72',
+            fontSize: compact ? '13px' : '17px',
+            color: '#c0d5b5',
             align: 'center',
-            wordWrap: { width: Math.min(900, viewW - 120) },
+            lineSpacing: 7,
+            wordWrap: { width: Math.min(720, viewW - 48) },
         }).setOrigin(0.5);
         overlay.add(body);
 
-        const credits = this.add.text(0, 170, 'THE LAST CONNECTION  ·  A Phaser + Laravel game\nPress R to play again  ·  Click here for more options', {
+        const credits = this.add.text(0, compact ? 125 : 155, 'THE LAST CONNECTION  ·  A Phaser + Laravel game\nPress R to play again  ·  Click here for more options', {
             fontFamily: 'sans-serif',
-            fontSize: '14px',
-            color: '#5a7a52',
+            fontSize: compact ? '11px' : '14px',
+            color: '#a9c59b',
+            align: 'center',
+            wordWrap: { width: viewW - 48 },
         }).setOrigin(0.5);
         overlay.add(credits);
         credits.setInteractive({ useHandCursor: true });
         credits.on('pointerdown', () => this.openMenu('ending'));
 
-        // Fade in overlay
-        this.tweens.add({
-            targets: bg,
-            alpha: 1,
-            delay: 2200,
-            duration: 1800,
-            ease: 'Power2',
+        // Keep the background fully readable from the first frame; stagger only
+        // the text so the cinematic never exposes low-contrast ghost text.
+        [title, subtitle, body, credits].forEach((textObject, index) => {
+            textObject.setAlpha(0);
+            this.tweens.add({
+                targets: textObject,
+                alpha: 1,
+                duration: 500,
+                delay: 250 + index * 350,
+                ease: 'Power2',
+            });
         });
 
-        // Animate title fade in
-        title.setAlpha(0);
-        this.tweens.add({
-            targets: title,
-            alpha: 1,
-            duration: 800,
-            delay: 2600,
-            ease: 'Power2',
-        });
-
-        subtitle.setAlpha(0);
-        this.tweens.add({
-            targets: subtitle,
-            alpha: 1,
-            duration: 800,
-            delay: 3100,
-            ease: 'Power2',
-        });
-
-        body.setAlpha(0);
-        this.tweens.add({
-            targets: body,
-            alpha: 1,
-            duration: 800,
-            delay: 3600,
-            ease: 'Power2',
-        });
-
-        credits.setAlpha(0);
-        this.tweens.add({
-            targets: credits,
-            alpha: 1,
-            duration: 800,
-            delay: 4400,
-            ease: 'Power2',
-        });
-
-        // Store overlay for cleanup
         this.endingOverlay = overlay;
-
-        // Listen for restart
-        this.input.keyboard.once('keydown-R', () => {
-            this.restartGame();
-        });
+        this.input.keyboard.once('keydown-R', () => this.restartGame());
     }
 
     // DO019: Reset every gameplay system and replay from a clean start.
