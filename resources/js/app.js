@@ -531,6 +531,10 @@ class WorldScene extends Phaser.Scene {
         this.menuActionAt = -Infinity;
         this.menuCameraZoom = null;
         this.destroyMenuDom();
+        this.destroyTutorialDom();
+        this.tutorialActive = false;
+        this.tutorialStep = 0;
+        this.pendingNewGameTutorial = false;
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
         this.inventoryOpen = false;
@@ -1587,8 +1591,8 @@ class WorldScene extends Phaser.Scene {
         this.refreshInventoryUI();
         this.refreshRecipeUI();
         if (GameState.tutorialPending) {
-            this.showMessage('START HERE: Search Your Home for supplies, press E at the workbench to craft a Saw, then use it to harvest trees.', 'success');
             GameState.tutorialPending = false;
+            this.startTutorial();
         }
     }
 
@@ -1743,11 +1747,15 @@ class WorldScene extends Phaser.Scene {
 
         const buttons = mode === 'confirm-new'
             ? [
-                ['START A FRESH GAME', () => this.startNewGame()],
-                ['CANCEL', () => this.openMenu('title')],
+                [this.pendingNewGameTutorial ? 'START TUTORIAL' : 'START A FRESH GAME', () => this.startNewGame({ tutorial: this.pendingNewGameTutorial })],
+                ['CANCEL', () => {
+                    this.pendingNewGameTutorial = false;
+                    this.openMenu('title');
+                }],
             ]
             : mode === 'title'
             ? [
+                ['TUTORIAL', () => this.confirmNewGame(true)],
                 ['NEW GAME', () => this.confirmNewGame()],
                 ['CONTINUE / LOAD SAVE', () => this.loadSavedGame('current')],
                 ...(this.hasSavedGame('backup') ? [['RESTORE PREVIOUS SAVE', () => this.loadSavedGame('backup')]] : []),
@@ -1760,6 +1768,7 @@ class WorldScene extends Phaser.Scene {
                 ]
                 : [
                     ['RESUME', () => this.closeMenu()],
+                    ['HOW TO PLAY', () => this.startTutorial()],
                     ['SAVE GAME', () => this.saveGame()],
                     [`SOUND: ${this.audioEnabled === false ? 'OFF' : 'ON'}`, () => {
                         this.audioEnabled = this.audioEnabled === false;
@@ -1862,11 +1871,99 @@ class WorldScene extends Phaser.Scene {
         this.menuDomLayer = null;
     }
 
-    confirmNewGame() {
+    confirmNewGame(tutorial = false) {
+        this.pendingNewGameTutorial = Boolean(tutorial);
         let hasSave = false;
         try { hasSave = Boolean(localStorage.getItem('tlc-save-v1')); } catch (error) { hasSave = false; }
         if (hasSave) this.openMenu('confirm-new');
-        else this.startNewGame();
+        else this.startNewGame({ tutorial });
+    }
+
+    startTutorial() {
+        if (this.tutorialActive) return;
+        if (this.menuOpen) this.closeMenu();
+        this.tutorialActive = true;
+        this.tutorialStep = 0;
+        this.player?.setVelocity(0, 0);
+        if (this.player?.body) this.player.body.enable = false;
+        this.renderTutorialStep();
+    }
+
+    renderTutorialStep() {
+        this.destroyTutorialDom();
+        const parent = this.game?.canvas?.parentElement;
+        if (!parent || typeof document === 'undefined') {
+            this.finishTutorial(true);
+            return;
+        }
+        const steps = [
+            { title: 'WELCOME TO HOME ISLAND', body: 'You are starting at home in a world that has been abandoned. This short guide explains the controls and your goal. The island remains visible behind this panel.' },
+            { title: 'MOVE AROUND', body: 'Desktop: use W, A, S, D or the arrow keys. Mobile: use the on-screen directional controls. Explore at your own pace; the game world will not advance while this guide is open.' },
+            { title: 'INTERACT WITH THE WORLD', body: 'Walk close to a house, resource, workbench, or boat and press E. On touch screens, tap the INTERACT button. Start by searching Your Home for useful supplies.' },
+            { title: 'INVENTORY AND SURVIVAL', body: 'Press I to open or close your inventory. Food restores hunger; press F to eat on desktop or use the food control on mobile. Hunger decreases over time during normal play.' },
+            { title: 'CRAFT AND BUILD', body: 'Find a workbench to craft tools and process materials. A Saw is needed to harvest trees. The boat requires a Saw, Hammer, Crowbar, Screwdriver, and four construction stages.' },
+            { title: 'YOUR WAY OFF THE ISLAND', body: 'Explore all five connected regions, gather what you need, and reach Coastal Escape to finish the boat. Nights are safe. When you are ready, continue below — this exact world becomes your main game without a reload.' },
+        ];
+        const step = steps[Math.min(this.tutorialStep, steps.length - 1)];
+        const layer = document.createElement('div');
+        layer.className = 'game-tutorial-overlay';
+        layer.setAttribute('role', 'dialog');
+        layer.setAttribute('aria-modal', 'true');
+        layer.setAttribute('aria-labelledby', 'game-tutorial-title');
+        const panel = document.createElement('section');
+        panel.className = 'game-tutorial-panel';
+        const eyebrow = document.createElement('div');
+        eyebrow.className = 'game-tutorial-eyebrow';
+        eyebrow.textContent = `FIELD GUIDE  ·  ${this.tutorialStep + 1} / ${steps.length}`;
+        const heading = document.createElement('h2');
+        heading.id = 'game-tutorial-title';
+        heading.textContent = step.title;
+        const body = document.createElement('p');
+        body.textContent = step.body;
+        const actions = document.createElement('div');
+        actions.className = 'game-tutorial-actions';
+        const makeButton = (label, className, action) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = className;
+            button.textContent = label;
+            button.addEventListener('click', action);
+            actions.appendChild(button);
+        };
+        if (this.tutorialStep > 0) {
+            makeButton('BACK', 'game-tutorial-secondary', () => {
+                this.tutorialStep = Math.max(0, this.tutorialStep - 1);
+                this.renderTutorialStep();
+            });
+        }
+        makeButton('SKIP GUIDE', 'game-tutorial-secondary', () => this.finishTutorial(true));
+        makeButton(this.tutorialStep === steps.length - 1 ? 'ENTER THE ISLAND' : 'CONTINUE', 'game-tutorial-primary', () => {
+            if (this.tutorialStep >= steps.length - 1) this.finishTutorial(false);
+            else {
+                this.tutorialStep += 1;
+                this.renderTutorialStep();
+            }
+        });
+        panel.append(eyebrow, heading, body, actions);
+        layer.appendChild(panel);
+        parent.appendChild(layer);
+        this.tutorialDomLayer = layer;
+        const firstButton = actions.querySelector('button');
+        firstButton?.focus();
+    }
+
+    destroyTutorialDom() {
+        if (this.tutorialDomLayer?.parentNode) this.tutorialDomLayer.parentNode.removeChild(this.tutorialDomLayer);
+        this.tutorialDomLayer = null;
+    }
+
+    finishTutorial(skipped = false) {
+        if (!this.tutorialActive) return;
+        this.destroyTutorialDom();
+        this.tutorialActive = false;
+        if (this.player?.body) this.player.body.enable = true;
+        this.player?.setVelocity(0, 0);
+        this.showMessage(skipped ? 'Guide skipped. Your journey continues.' : 'Tutorial complete. Your journey begins now.', 'success');
     }
 
     showMenuNotice(message) {
@@ -1901,7 +1998,7 @@ class WorldScene extends Phaser.Scene {
         this.touchActionRoot?.setVisible(this.isTouchLayout);
     }
 
-    startNewGame() {
+    startNewGame({ tutorial = false } = {}) {
         // Preserve the existing save before mutating the current run or clearing its slot.
         try {
             const existingSave = localStorage.getItem('tlc-save-v1');
@@ -1932,7 +2029,7 @@ class WorldScene extends Phaser.Scene {
         this.endingActive = false;
         this.menuOpen = false;
         this.menuMode = null;
-        GameState.tutorialPending = true;
+        GameState.tutorialPending = Boolean(tutorial);
         this.scene.restart({ startMapId: 'MAP1', startTile: { i: 13, j: 13 } });
     }
 
@@ -3302,7 +3399,7 @@ THE END`, {
 
         const interactionDown = this.keys?.E?.isDown || Boolean(this.touchInteract);
         const escapeDown = this.keys?.ESC?.isDown || Boolean(this.touchPause);
-        if (this.menuOpen || this.endingActive) return;
+        if (this.menuOpen || this.endingActive || this.tutorialActive) return;
         const inventoryDown = this.keys?.I?.isDown || Boolean(this.touchInventory);
         const eatDown = this.keys?.F?.isDown || Boolean(this.touchEat);
         const eatPressed = eatDown && !this.eatWasDown;
