@@ -250,8 +250,12 @@ assert.match(source, /GameState\.survival = \{ \.\.\.this\.survival \}/);
 // TLC-027: scene lifecycle and full save restoration.
 assert.match(source, /this\.won = false;[\s\S]*?this\.endingActive = false;/);
 assert.match(source, /GameState\.audioEnabled = true;/);
-assert.match(source, /GameState\.objectStates = JSON\.parse\(JSON\.stringify\(save\.objectStates\)\)/);
-assert.match(source, /GameState\.survival = \{ \.\.\.save\.survival \}/);
+assert.match(source, /GameState\.objectStates = normalizedObjectStates/);
+assert.match(source, /GameState\.survival = normalizedSurvival/);
+assert.match(source, /this\.keys\?\.E\?\.isDown/);
+assert.match(source, /this\.keys\?\.ESC\?\.isDown/);
+assert.match(source, /this\.cursors\?\.left\?\.isDown/);
+assert.match(source, /this\.keys\?\.A\?\.isDown/);
 assert.match(source, /GameState\.audioEnabled = save\.audioEnabled !== false/);
 assert.match(source, /const validInventory = save\?\.inventory/);
 assert.match(source, /const validEquipment = save\?\.equipment/);
