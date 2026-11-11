@@ -528,6 +528,8 @@ class WorldScene extends Phaser.Scene {
         this.endingActive = false;
         this.menuOpen = false;
         this.menuMode = null;
+        this.menuActionAt = -Infinity;
+        this.menuCameraZoom = null;
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
         this.inventoryOpen = false;
@@ -625,7 +627,9 @@ class WorldScene extends Phaser.Scene {
     }
 
     persistCurrentRun() {
-        if (!GameState.started || !this.player?.active || !this.obstacles?.active) return false;
+        // Phaser groups do not expose a dependable "active" lifecycle flag
+        // across versions. The live player and valid map identity are sufficient.
+        if (!GameState.started || !this.player?.active || !MAPS[this.currentMapId]) return false;
         return this.saveGame({ silent: true });
     }
 
@@ -1251,7 +1255,8 @@ class WorldScene extends Phaser.Scene {
         );
         const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
         // Desktop shows 10% more of the world; touch layouts retain their current scale.
-        this.cameras.main.setZoom(responsiveZoom * (touchLayout ? 1 : 0.7));
+        this.worldCameraZoom = responsiveZoom * (touchLayout ? 1 : 0.7);
+        this.cameras.main.setZoom(this.worldCameraZoom);
     }
 
     createInteractionSystem() {
@@ -1692,9 +1697,13 @@ class WorldScene extends Phaser.Scene {
         this.menuNoticeText = null;
         this.menuMode = mode;
         this.menuOpen = true;
-        // Freeze camera follow while menus are open so pointer hit-testing stays
-        // against a stable camera transform across repeated menu visits.
+        // Menu controls use viewport-pixel positions. A 1:1 camera keeps
+        // Phaser's rendered hit areas aligned with the actual pointer position.
+        if (!this.menuOpen) {
+            this.menuCameraZoom = this.cameras?.main?.zoom ?? this.worldCameraZoom ?? 1;
+        }
         this.cameras?.main?.stopFollow();
+        this.cameras?.main?.setZoom(1);
         this.player?.setVelocity(0, 0);
         if (this.player?.body) this.player.body.enable = false;
 
@@ -1830,10 +1839,15 @@ class WorldScene extends Phaser.Scene {
         if (!this.menuOpen) return;
         this.menuOverlay?.destroy();
         this.menuOverlay = null;
+        this.menuNoticeText = null;
         this.menuOpen = false;
         this.menuMode = null;
         if (this.player?.body) this.player.body.enable = true;
-        if (this.player?.active) this.cameras?.main?.startFollow(this.player, true, 0.08, 0.08);
+        if (this.cameras?.main) {
+            this.cameras.main.setZoom(this.worldCameraZoom || this.menuCameraZoom || 1);
+            if (this.player?.active) this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        }
+        this.menuCameraZoom = null;
         this.touchControlsRoot?.setVisible(this.isTouchLayout);
         this.touchActionRoot?.setVisible(this.isTouchLayout);
     }
@@ -1863,26 +1877,42 @@ class WorldScene extends Phaser.Scene {
     }
 
     saveGame({ silent = false } = {}) {
-        const playerTile = this.playerTile();
-        const objectStates = this.captureCurrentMapObjectStates();
-        GameState.objectStates[this.currentMapId] = objectStates;
-        const save = {
-            version: 1,
-            savedAt: new Date().toISOString(),
-            mapId: this.currentMapId,
-            playerTile,
-            inventory: { ...this.inventory },
-            equipment: { ...this.equipment },
-            boatStage: this.boatStage,
-            boatStagesCompleted: [...this.boatStagesCompleted],
-            boatBuilt: this.boatBuilt,
-            workbenchDiscovered: this.workbenchDiscovered,
-            survival: { ...this.survival },
-            objectStates: JSON.parse(JSON.stringify(GameState.objectStates)),
-            audioEnabled: this.audioEnabled !== false,
-        };
         try {
-            localStorage.setItem('tlc-save-v1', JSON.stringify(save));
+            if (!this.player?.active || !MAPS[this.currentMapId] || !this.inventory || !this.equipment || !this.survival) {
+                throw new Error('The current game state is not ready to save.');
+            }
+            const playerTile = this.playerTile();
+            if (!Number.isFinite(playerTile.i) || !Number.isFinite(playerTile.j)) {
+                throw new Error('The player position is invalid.');
+            }
+            const allObjectStates = {
+                ...(GameState.objectStates || {}),
+                [this.currentMapId]: this.captureCurrentMapObjectStates(),
+            };
+            const save = {
+                version: 1,
+                savedAt: new Date().toISOString(),
+                mapId: this.currentMapId,
+                playerTile: {
+                    i: Phaser.Math.Clamp(Math.round(playerTile.i), 0, 29),
+                    j: Phaser.Math.Clamp(Math.round(playerTile.j), 0, 29),
+                },
+                inventory: { ...this.inventory },
+                equipment: { ...this.equipment },
+                boatStage: this.boatStage,
+                boatStagesCompleted: [...this.boatStagesCompleted],
+                boatBuilt: Boolean(this.boatBuilt),
+                workbenchDiscovered: Boolean(this.workbenchDiscovered),
+                survival: { ...this.survival },
+                objectStates: JSON.parse(JSON.stringify(allObjectStates)),
+                audioEnabled: this.audioEnabled !== false,
+            };
+            const serialized = JSON.stringify(save);
+            if (!serialized) throw new Error('Save data could not be serialized.');
+            localStorage.setItem('tlc-save-v1', serialized);
+
+            // Shared state is updated only after the browser confirms the write.
+            GameState.objectStates = allObjectStates;
             GameState.inventory = save.inventory;
             GameState.equipment = save.equipment;
             GameState.boatStage = save.boatStage;
@@ -1897,77 +1927,139 @@ class WorldScene extends Phaser.Scene {
             }
             return true;
         } catch (error) {
-            if (!silent) this.showMessage('Could not save. Browser storage may be unavailable or full.', 'error');
+            console.error('[THE LAST CONNECTION] Save failed:', error);
+            const message = error?.name === 'QuotaExceededError'
+                ? 'Save failed: browser storage is full. Clear space and try again.'
+                : 'Save failed: browser storage is unavailable or the game state is invalid.';
+            if (this.menuOpen) this.showMenuNotice(message);
+            else if (!silent) this.showMessage(message, 'error');
             return false;
         }
     }
 
     loadSavedGame() {
+        let rawSave;
+        try {
+            rawSave = localStorage.getItem('tlc-save-v1');
+        } catch (error) {
+            console.error('[THE LAST CONNECTION] Save read failed:', error);
+            if (this.menuOpen) this.showMenuNotice('Cannot access browser storage. Check this site’s storage permissions.');
+            else this.showMessage('Cannot access browser storage.', 'error');
+            return false;
+        }
+        if (!rawSave) {
+            if (this.menuOpen) this.showMenuNotice('No saved game exists in this browser yet.');
+            else this.showMessage('No saved game exists in this browser yet.', 'warning');
+            return false;
+        }
+
         let save;
         try {
-            save = JSON.parse(localStorage.getItem('tlc-save-v1') || 'null');
+            save = JSON.parse(rawSave);
         } catch (error) {
-            save = null;
+            console.error('[THE LAST CONNECTION] Save data is not valid JSON:', error);
+            if (this.menuOpen) this.showMenuNotice('The saved game is damaged and cannot be loaded.');
+            else this.showMessage('The saved game is damaged and cannot be loaded.', 'error');
+            return false;
         }
+
         const validTile = save?.playerTile &&
             Number.isFinite(save.playerTile.i) && Number.isFinite(save.playerTile.j) &&
             save.playerTile.i >= 0 && save.playerTile.i < 30 &&
             save.playerTile.j >= 0 && save.playerTile.j < 30;
         const validInventory = save?.inventory && typeof save.inventory === 'object' &&
-            Object.keys(ITEM_DEFS).every(key =>
-                Number.isInteger(save.inventory[key] ?? 0) &&
-                (save.inventory[key] ?? 0) >= 0 &&
-                (save.inventory[key] ?? 0) <= ITEM_DEFS[key].limit
-            );
-        const validEquipment = save?.equipment && ['saw', 'hammer', 'crowbar', 'screwdriver']
-            .every(key => typeof save.equipment[key] === 'boolean');
+            !Array.isArray(save.inventory) &&
+            Object.keys(ITEM_DEFS).every(key => {
+                const amount = save.inventory[key] ?? 0;
+                return Number.isInteger(amount) && amount >= 0 && amount <= ITEM_DEFS[key].limit;
+            });
+        const validEquipment = save?.equipment && typeof save.equipment === 'object' &&
+            ['saw', 'hammer', 'crowbar', 'screwdriver'].every(key => typeof save.equipment[key] === 'boolean');
         const validBoat = Number.isInteger(save?.boatStage) &&
             save.boatStage >= 0 && save.boatStage <= BOAT_STAGES.length &&
-            Array.isArray(save.boatStagesCompleted) &&
-            save.boatStagesCompleted.length === BOAT_STAGES.length &&
-            save.boatStagesCompleted.every(value => typeof value === 'boolean') &&
+            (save.boatStagesCompleted === undefined ||
+                (Array.isArray(save.boatStagesCompleted) &&
+                    save.boatStagesCompleted.length === BOAT_STAGES.length &&
+                    save.boatStagesCompleted.every(value => typeof value === 'boolean'))) &&
+            (save.boatBuilt === undefined || typeof save.boatBuilt === 'boolean') &&
             Boolean(save.boatBuilt) === (save.boatStage === BOAT_STAGES.length);
-        const validSurvival = save?.survival &&
+        const validSurvival = save?.survival && typeof save.survival === 'object' &&
             Number.isFinite(save.survival.elapsedMs) && save.survival.elapsedMs >= 0 &&
             Number.isFinite(save.survival.hunger) && save.survival.hunger >= 0 &&
             save.survival.hunger <= 100 &&
-            Number.isFinite(save.survival.hungerTickMs) &&
-            save.survival.hungerTickMs >= 0 && save.survival.hungerTickMs < 15000;
-        const validObjectStates = save?.objectStates && typeof save.objectStates === 'object' &&
-            !Array.isArray(save.objectStates) &&
-            Object.entries(save.objectStates).every(([mapId, states]) =>
-                MAPS[mapId] && Array.isArray(states) &&
-                states.every(state => state && typeof state.name === 'string' &&
-                    typeof state.kind === 'string' && Number.isFinite(state.x) &&
-                    Number.isFinite(state.y) && typeof state.searched === 'boolean' &&
-                    typeof state.harvested === 'boolean')
-            );
+            (save.survival.hungerTickMs === undefined ||
+                (Number.isFinite(save.survival.hungerTickMs) && save.survival.hungerTickMs >= 0));
+        const validObjectStates = save?.objectStates === undefined ||
+            (save.objectStates && typeof save.objectStates === 'object' &&
+                !Array.isArray(save.objectStates) &&
+                Object.entries(save.objectStates).every(([mapId, states]) =>
+                    MAPS[mapId] && Array.isArray(states) &&
+                    states.every(state => state && typeof state.name === 'string' &&
+                        typeof state.kind === 'string' && Number.isFinite(state.x) &&
+                        Number.isFinite(state.y) &&
+                        (state.searched === undefined || typeof state.searched === 'boolean') &&
+                        (state.harvested === undefined || typeof state.harvested === 'boolean'))
+                ));
 
         if (!save || save.version !== 1 || !MAPS[save.mapId] || !validTile ||
-            !validInventory || !validEquipment || !validBoat || !validSurvival ||
-            !validObjectStates) {
-            if (this.menuOpen) this.showMenuNotice('No valid saved game was found in this browser.');
-            else this.showMessage('No valid saved game was found.', 'warning');
+            !validInventory || !validEquipment || !validBoat || !validSurvival || !validObjectStates) {
+            console.warn('[THE LAST CONNECTION] Save validation failed.', {
+                version: save?.version, mapId: save?.mapId, validTile, validInventory,
+                validEquipment, validBoat, validSurvival, validObjectStates,
+            });
+            if (this.menuOpen) this.showMenuNotice('Saved game is incomplete or incompatible. Start a new game or use the same browser save.');
+            else this.showMessage('Saved game is incomplete or incompatible.', 'error');
             return false;
         }
 
-        // Restore every shared subsystem before the scene is recreated.
-        GameState.inventory = { ...save.inventory };
-        GameState.equipment = { ...save.equipment };
-        GameState.boatStage = save.boatStage;
-        GameState.boatStagesCompleted = [...save.boatStagesCompleted];
-        GameState.boatBuilt = Boolean(save.boatBuilt);
-        GameState.workbenchDiscovered = Boolean(save.workbenchDiscovered);
-        GameState.survival = { ...save.survival };
-        GameState.objectStates = JSON.parse(JSON.stringify(save.objectStates));
-        GameState.audioEnabled = save.audioEnabled !== false;
-        GameState.started = true;
-        this.scene.start('WorldScene', {
-            startMapId: save.mapId,
-            startTile: save.playerTile,
-            objectStates: GameState.objectStates,
-        });
-        return true;
+        // Normalize optional fields to keep older version-1 saves compatible.
+        const completedStages = Array.isArray(save.boatStagesCompleted)
+            ? [...save.boatStagesCompleted]
+            : BOAT_STAGES.map((_, index) => index < save.boatStage);
+        const normalizedObjectStates = Object.fromEntries(
+            Object.entries(save.objectStates || {}).map(([mapId, states]) => [
+                mapId,
+                states.map(state => ({
+                    ...state,
+                    searched: Boolean(state.searched),
+                    harvested: Boolean(state.harvested),
+                })),
+            ])
+        );
+        const normalizedSurvival = {
+            elapsedMs: save.survival.elapsedMs,
+            hunger: save.survival.hunger,
+            hungerTickMs: Phaser.Math.Clamp(save.survival.hungerTickMs ?? 0, 0, 14999),
+            day: Number.isFinite(save.survival.day) ? save.survival.day : 1,
+            isNight: Boolean(save.survival.isNight),
+        };
+
+        try {
+            GameState.inventory = Object.fromEntries(
+                Object.keys(ITEM_DEFS).map(key => [key, save.inventory[key] ?? 0])
+            );
+            GameState.equipment = { ...save.equipment };
+            GameState.boatStage = save.boatStage;
+            GameState.boatStagesCompleted = completedStages;
+            GameState.boatBuilt = Boolean(save.boatBuilt);
+            GameState.workbenchDiscovered = Boolean(save.workbenchDiscovered);
+            GameState.survival = normalizedSurvival;
+            GameState.objectStates = normalizedObjectStates;
+            GameState.audioEnabled = save.audioEnabled !== false;
+            GameState.started = true;
+            this.scene.start('WorldScene', {
+                startMapId: save.mapId,
+                startTile: save.playerTile,
+                objectStates: normalizedObjectStates,
+            });
+            return true;
+        } catch (error) {
+            GameState.started = false;
+            console.error('[THE LAST CONNECTION] Scene restore failed:', error);
+            if (this.menuOpen) this.showMenuNotice('The save was read, but the game could not be restored. Reload the page and try again.');
+            else this.showMessage('The saved game could not be restored.', 'error');
+            return false;
+        }
     }
 
     returnToTitle() {
@@ -3106,8 +3198,9 @@ THE END`, {
         }
         if (this.cameras?.main) {
             const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
-            // Recalculate on every resize; only desktop receives the 10% zoom-out.
-            this.cameras.main.setZoom(responsiveZoom * (this.isTouchLayout ? 1 : 0.7));
+            // Recalculate gameplay zoom on resize, but keep open menus at 1:1.
+            this.worldCameraZoom = responsiveZoom * (this.isTouchLayout ? 1 : 0.7);
+            this.cameras.main.setZoom(this.menuOpen ? 1 : this.worldCameraZoom);
         }
         if (this.menuOpen && this.menuMode && this.menuOverlay) this.openMenu(this.menuMode);
     }
