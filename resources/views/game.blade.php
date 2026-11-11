@@ -25,7 +25,56 @@
         body {
             display: flex;
             flex-direction: column;
+            width: 100vw;
+            height: 100vh;
             height: 100dvh;
+            min-height: 0;
+            touch-action: none;
+        }
+
+        /* The game is an edge-to-edge application, not a letterboxed 16:9 page. */
+        .game-header, .game-footer { display: none !important; }
+
+        main {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            min-width: 0;
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .game-frame {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            align-items: stretch;
+            justify-content: stretch;
+        }
+
+        #game-container {
+            position: absolute;
+            inset: 0;
+            flex: 1 1 auto;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            max-width: none;
+            max-height: none;
+            aspect-ratio: auto;
+        }
+
+        #game-container canvas {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
             touch-action: none;
         }
 
@@ -58,15 +107,9 @@
             text-align: right;
         }
 
-        main {
-            flex: 1 1 auto;
-            min-width: 0;
-            min-height: 0;
-            display: flex;
-            padding: 0;
-        }
+        main { display: flex; }
 
-        .game-frame {
+.game-frame {
             flex: 1 1 auto;
             min-width: 0;
             min-height: 0;
@@ -74,7 +117,8 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
+            justify-content: stretch;
             overflow: hidden;
             border: 0;
             border-radius: 0;
@@ -82,14 +126,16 @@
         }
 
         #game-container {
-            position: relative;
-            flex: 0 1 auto;
+            position: absolute;
+            inset: 0;
+            flex: 1 1 auto;
             min-width: 0;
             min-height: 0;
-            width: min(100%, calc((100dvh - 110px) * 16 / 9));
-            height: auto;
-            max-height: 100%;
-            aspect-ratio: 16 / 9;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            aspect-ratio: auto;
             overflow: hidden;
         }
 
