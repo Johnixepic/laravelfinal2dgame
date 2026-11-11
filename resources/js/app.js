@@ -528,6 +528,8 @@ class WorldScene extends Phaser.Scene {
         this.endingActive = false;
         this.menuOpen = false;
         this.menuMode = null;
+        this.menuOverlay?.destroy();
+        this.menuOverlay = null;
         this.inventoryOpen = false;
         this.craftingOpen = false;
         this.transitioningMap = false;
@@ -1377,16 +1379,13 @@ class WorldScene extends Phaser.Scene {
 
         let cardY = 0;
 
-        // Keep the mask graphics off the visible display list. It is still used
-        // by Phaser's geometry-mask renderer, but cannot paint a white rectangle.
-        if (this.recipeMaskShape) this.recipeMaskShape.destroy();
-        const recipeMaskShape = this.make.graphics({ x: px, y: py, add: false });
-        recipeMaskShape.fillStyle(0xffffff, 1);
-        recipeMaskShape.fillRect(-300, -305, 600, 575);
-
-        const recipeMask = recipeMaskShape.createGeometryMask();
-        recipeScrollArea.setMask(recipeMask);
-        this.recipeMaskShape = recipeMaskShape;
+        // Use card visibility instead of a geometry mask. Phaser's geometry
+        // mask was clipping the recipe cards horizontally after responsive
+        // scaling, leaving the right side of the workbench blank.
+        if (this.recipeMaskShape) {
+            this.recipeMaskShape.destroy();
+            this.recipeMaskShape = null;
+        }
         this.recipeScrollArea = recipeScrollArea;
         this.recipeScrollOffset = 0;
 
@@ -1475,6 +1474,7 @@ class WorldScene extends Phaser.Scene {
         this.craftingPanel.setVisible(false);
         this.craftingOpen = false;
         this.recipeScrollMax = Math.max(0, cardY - 535);
+        this.updateRecipeCardVisibility();
 
         this.input.on('wheel', (pointer, currentlyOver, deltaX, deltaY) => {
             if (!this.craftingOpen || !this.recipeScrollArea) return;
@@ -1494,6 +1494,7 @@ class WorldScene extends Phaser.Scene {
                 this.recipeScrollMax
             );
             this.recipeScrollArea.setY(-270 - this.recipeScrollOffset);
+            this.updateRecipeCardVisibility();
         });
 
         // Touch users need a swipe gesture because mobile browsers have no mouse wheel.
@@ -1525,6 +1526,7 @@ class WorldScene extends Phaser.Scene {
                 this.recipeScrollMax
             );
             this.recipeScrollArea.setY(-270 - this.recipeScrollOffset);
+            this.updateRecipeCardVisibility();
         });
 
         this.createCompass();
@@ -1533,6 +1535,17 @@ class WorldScene extends Phaser.Scene {
         if (GameState.tutorialPending) {
             this.showMessage('START HERE: Search Your Home for supplies, press E at the workbench to craft a Saw, then use it to harvest trees.', 'success');
             GameState.tutorialPending = false;
+        }
+    }
+
+    updateRecipeCardVisibility() {
+        if (!this.recipeCards || !this.recipeScrollArea) return;
+        // recipeScrollArea starts at y=-270. Its visible local range is
+        // -35..540, matching the original workbench viewport without a mask.
+        const offset = this.recipeScrollOffset || 0;
+        for (const card of this.recipeCards) {
+            const cardY = card.y - offset;
+            card.setVisible(cardY >= -65 && cardY <= 570);
         }
     }
 
@@ -1764,6 +1777,10 @@ class WorldScene extends Phaser.Scene {
     }
 
     startNewGame() {
+        // Remove the old title/confirmation overlay before restarting the scene.
+        // This prevents stale menu fragments surviving a resize or scene restart.
+        this.menuOverlay?.destroy();
+        this.menuOverlay = null;
         GameState.inventory = Object.fromEntries(Object.keys(ITEM_DEFS).map(key => [key, 0]));
         GameState.equipment = { saw: false, hammer: false, crowbar: false, screwdriver: false };
         GameState.boatStage = 0;
@@ -2965,7 +2982,6 @@ THE END`, {
             const panelY = h / 2;
             this.craftingPanel.setPosition(w / 2, panelY).setScale(panelScale);
             this.craftingPanelPosition = { x: w / 2, y: panelY };
-            if (this.recipeMaskShape) this.recipeMaskShape.setPosition(w / 2, panelY).setScale(panelScale);
         }
         if (this.cameras?.main) {
             const responsiveZoom = Math.min(1.5, Math.max(0.45, w / 1000), Math.max(0.45, h / 650));
