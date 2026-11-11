@@ -1693,15 +1693,16 @@ class WorldScene extends Phaser.Scene {
     }
 
     openMenu(mode = 'pause') {
+        const openingMenu = !this.menuOpen;
         if (this.menuOverlay) this.menuOverlay.destroy();
         this.menuNoticeText = null;
+        if (openingMenu) {
+            this.menuCameraZoom = this.cameras?.main?.zoom ?? this.worldCameraZoom ?? 1;
+        }
         this.menuMode = mode;
         this.menuOpen = true;
         // Menu controls use viewport-pixel positions. A 1:1 camera keeps
         // Phaser's rendered hit areas aligned with the actual pointer position.
-        if (!this.menuOpen) {
-            this.menuCameraZoom = this.cameras?.main?.zoom ?? this.worldCameraZoom ?? 1;
-        }
         this.cameras?.main?.stopFollow();
         this.cameras?.main?.setZoom(1);
         this.player?.setVelocity(0, 0);
