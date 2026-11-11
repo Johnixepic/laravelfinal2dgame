@@ -1898,9 +1898,9 @@ class WorldScene extends Phaser.Scene {
         }
         const steps = [
             { title: 'WELCOME TO HOME ISLAND', body: 'You are starting at home in a world that has been abandoned. This short guide explains the controls and your goal. The island remains visible behind this panel.' },
-            { title: 'MOVE AROUND', body: 'Desktop: use W, A, S, D or the arrow keys. Mobile: use the on-screen directional controls. Explore at your own pace; the game world will not advance while this guide is open.' },
-            { title: 'INTERACT WITH THE WORLD', body: 'Walk close to a house, resource, workbench, or boat and press E. On touch screens, tap the INTERACT button. Start by searching Your Home for useful supplies.' },
-            { title: 'INVENTORY AND SURVIVAL', body: 'Press I to open or close your inventory. Food restores hunger; press F to eat on desktop or use the food control on mobile. Hunger decreases over time during normal play.' },
+            { title: 'MOVE AROUND', body: 'Desktop: use W, A, S, D or the arrow keys. Mobile: use the on-screen arrow controls. Explore at your own pace; the game world will not advance while this guide is open.' },
+            { title: 'INTERACT WITH THE WORLD', body: 'Walk close to a house, resource, workbench, or boat and press E. On touch screens, tap the E action button. Start by searching Your Home for useful supplies.' },
+            { title: 'INVENTORY AND SURVIVAL', body: 'Press I to open or close your inventory. Food restores hunger; press F to eat on desktop or tap the F button on mobile. Hunger decreases over time during normal play.' },
             { title: 'CRAFT AND BUILD', body: 'Find a workbench to craft tools and process materials. A Saw is needed to harvest trees. The boat requires a Saw, Hammer, Crowbar, Screwdriver, and four construction stages.' },
             { title: 'YOUR WAY OFF THE ISLAND', body: 'Explore all five connected regions, gather what you need, and reach Coastal Escape to finish the boat. Nights are safe. When you are ready, continue below — this exact world becomes your main game without a reload.' },
         ];
