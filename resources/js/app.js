@@ -1396,6 +1396,7 @@ class WorldScene extends Phaser.Scene {
         this.refreshSurvivalUI();
         this.createTouchControls();
         this.createGameMenu();
+        if (data?.respawned) this.showMessage('You woke at home. Some carried supplies were lost, but your permanent progress remains.', 'warning');
 
         const camW = this.cameras.main.width;
         const camH = this.cameras.main.height;
@@ -3548,6 +3549,7 @@ THE END`, {
         if (eatPressed) this.eatFood();
         this.updateSurvival(delta);
         this.updateNightThreat(delta);
+        if (this.survival.health <= 0 && !this.deathHandling) this.handlePlayerDeath();
         if (this.deathHandling) return;
 
         // Quiet checkpoint every minute; never interrupt indoor exploration or menus.
