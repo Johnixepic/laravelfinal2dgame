@@ -183,7 +183,7 @@ assert.match(source, /this\.children\.bringToTop\(this\.messageText\)/);
 assert.match(source, /ALREADY SEARCHED/);
 assert.match(source, /ALREADY HARVESTED/);
 assert.match(source, /this\.messageText\.setScrollFactor\(0, 0\)/);
-assert.match(source, /this\.messageHideEvent = this\.time\.delayedCall\(4500/);
+assert.match(source, /this\.messageHideEvent = this\.time\.delayedCall\(3500/);
 assert.match(source, /this\.interactionPrompt\.setPosition\(w \/ 2, h - \(compact \? 126 : 120\)\)/);
 assert.match(source, /this\.mapLabel = null;/);
 assert.match(source, /this\.mapLabel && this\.mapLabel\.scene === this && this\.mapLabel\.active/);
