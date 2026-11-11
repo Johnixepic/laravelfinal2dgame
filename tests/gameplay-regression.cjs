@@ -54,8 +54,11 @@ assert.match(source, /MAP4: \{ scrap: 1, rope: 1, cloth: 1 \}/);
 assert.match(source, /MAP5: \{ rope: 1, cloth: 2 \}/);
 // TLC-024: the Workbench mask must cover the panel, not the world origin.
 assert.match(source, /this\.make\.graphics\(\{ x: px, y: py, add: false \}\)/);
-assert.match(source, /recipeMaskShape\.fillRect\(-300, -305, 600, 575\)/);
-assert.match(source, /recipeScrollArea\.setMask\(recipeMask\)/);
+assert.match(source, /Use card visibility instead of a geometry mask/);
+assert.match(source, /updateRecipeCardVisibility\(\) \{/);
+assert.match(source, /card\.setVisible\(cardY >= -65 && cardY <= 570\)/);
+assert.match(source, /this\.updateRecipeCardVisibility\(\)/);
+assert.doesNotMatch(source, /recipeScrollArea\.setMask\(recipeMask\)/);
 assert.match(source, /this\.input\.on\('wheel'/);
 assert.match(source, /this\.recipeScrollArea\.setY\(-270 - this\.recipeScrollOffset\)/);
 assert.match(source, /\$\{ITEM_DEFS\[k\]\.name\}: \$\{this\.getItem\(k\)\}\/\$\{a\}/);
@@ -129,7 +132,7 @@ assert.match(source, /GameState\.boatStagesCompleted = \[false, false, false, fa
  // TLC-026: complete game flow, browser save/load, touch support and guaranteed opening supplies.
 assert.match(source, /createGameMenu\(\) \{/);
 assert.match(source, /openMenu\(mode = 'pause'\)/);
-assert.match(source, /startNewGame\(\) \{/);
+assert.match(source, /startNewGame\(\) \{[\s\S]*?this\.menuOverlay\?\.destroy\(\)/);
 assert.match(source, /confirmNewGame\(\) \{/);
 assert.match(source, /mode === 'confirm-new'/);
 assert.match(source, /saveGame\(\{ silent = false \} = \{\}\) \{/);
