@@ -3151,10 +3151,13 @@ THE END`, {
 
             let idx = 0;
             let idy = 0;
-            if (this.keys.left.isDown || this.keys.A.isDown || this.touchKeys?.left) idx -= 1;
-            if (this.keys.right.isDown || this.keys.D.isDown || this.touchKeys?.right) idx += 1;
-            if (this.keys.up.isDown || this.keys.W.isDown || this.touchKeys?.up) idy -= 1;
-            if (this.keys.down.isDown || this.keys.S.isDown || this.touchKeys?.down) idy += 1;
+            // Arrow keys come from createCursorKeys(); WASD comes from addKeys().
+            // Guard both collections because Phaser can recreate keyboard objects
+            // while entering/exiting an indoor area or after a scene transition.
+            if (this.cursors?.left?.isDown || this.keys?.A?.isDown || this.touchKeys?.left) idx -= 1;
+            if (this.cursors?.right?.isDown || this.keys?.D?.isDown || this.touchKeys?.right) idx += 1;
+            if (this.cursors?.up?.isDown || this.keys?.W?.isDown || this.touchKeys?.up) idy -= 1;
+            if (this.cursors?.down?.isDown || this.keys?.S?.isDown || this.touchKeys?.down) idy += 1;
 
             if (idx !== 0 && idy !== 0) {
                 const length = Math.hypot(idx, idy);
