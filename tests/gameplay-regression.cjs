@@ -419,7 +419,7 @@ assert.match(source, /this\.showMessage\('You woke at home[\s\S]*?this\.saveGame
 assert.match(source, /elapsedMs: 120000, hunger: 100[\s\S]*day: 1, isNight: true/);
 assert.match(source, /this\.currentMapId === 'MAP1' \|\| !isNight/);
 assert.match(source, /attackNightCreature\(\)/);
-assert.match(source, /this\.equipment\?\.hammer \|\| this\.equipment\?\.crowbar/);
+assert.match(source, /!this\.equipment\?\.hammer && !this\.equipment\?\.crowbar/);
 assert.match(source, /const damage = this\.equipment\.hammer \? 35 : 25/);
 assert.match(source, /this\.keys\?\.SPACE\?\.isDown \|\| Boolean\(this\.touchAttack\)/);
 assert.match(source, /touchAttack = true/);
