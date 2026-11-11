@@ -2133,6 +2133,7 @@ class WorldScene extends Phaser.Scene {
 
         this.refreshRecipeUI();
         this.refreshInventoryUI();
+        this.refreshBoatUI();
         this.playSfx('craft');
     }
 
@@ -2384,6 +2385,7 @@ class WorldScene extends Phaser.Scene {
             // DO008: Mark workbench as discovered
             this.workbenchDiscovered = true;
             GameState.workbenchDiscovered = true;
+            this.refreshBoatUI();
 
             this.craftingOpen = true;
             this.craftingPanel.setVisible(true);
@@ -3220,6 +3222,8 @@ THE END`, {
                 }
             } else {
                 this.interactWith(this.nearbyObject);
+                // Re-evaluate the construction checklist after every world interaction.
+                this.refreshBoatUI();
             }
         }
 
