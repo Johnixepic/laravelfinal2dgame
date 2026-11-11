@@ -1836,13 +1836,13 @@ class WorldScene extends Phaser.Scene {
                 width: `${width}px`, maxWidth: 'calc(100% - 24px)',
                 height: `${height}px`, transform: 'translate(-50%, -50%)',
                 pointerEvents: 'auto', cursor: 'pointer',
-                border: '2px solid #8eaa7d', borderRadius: '4px',
-                background: '#203a29', color: '#edf5e8',
-                font: 'bold 17px Arial, sans-serif', letterSpacing: '0.3px',
+                border: '0', borderRadius: '4px',
+                background: 'transparent', color: 'transparent',
+                font: '0px Arial, sans-serif', letterSpacing: '0',
                 touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
             });
-            button.addEventListener('pointerenter', () => { button.style.background = '#34553a'; });
-            button.addEventListener('pointerleave', () => { button.style.background = '#203a29'; });
+            button.addEventListener('pointerenter', () => { button.style.background = 'rgba(52, 85, 58, 0.28)'; });
+            button.addEventListener('pointerleave', () => { button.style.background = 'transparent'; });
             button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
