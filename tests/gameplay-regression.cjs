@@ -239,8 +239,8 @@ assert.match(source, /alreadyOwned \? 'ALREADY OWNED'/);
 assert.match(source, /this\.refreshRecipeUI\(\);/);
 assert.match(source, /GameState\.workbenchDiscovered = true/);
 assert.match(source, /GameState\.started = false/);
-assert.match(source, /GameState\.tutorialPending = true/);
-assert.match(source, /this\\.startTutorial\\(\\);/);
+assert.match(source, /GameState\.tutorialPending = Boolean\(tutorial\)/);
+assert.match(source, /this\.startTutorial\(\);/);
 assert.match(source, /this\.startNewGame\(\);/);
 assert.match(source, /this\.openMenu\('ending'\)/);
  // TLC-026: safe survival loop, food action, day/night state and optional sound effects.
