@@ -2656,63 +2656,100 @@ THE END`, {
         const toolLabels = { saw: 'Saw', hammer: 'Hammer', crowbar: 'Crowbar', screwdriver: 'Screwdriver' };
         const missingTools = requiredTools.filter(key => !this.equipment[key]);
         const stage = BOAT_STAGES[this.boatStage];
-        const lines = ['BOAT CONSTRUCTION', ''];
+        const completedStages = this.boatStagesCompleted.filter(Boolean).length;
+        const compact = Boolean(this.isTouchLayout);
+        const lines = [
+            'BOAT ESCAPE  •  CONSTRUCTION TASKS',
+            '────────────────────────',
+        ];
 
         if (this.boatBuilt) {
-            lines.push('STATUS: READY TO SAIL');
-            lines.push('All four construction stages are complete.');
-            lines.push('NEXT TASK: Reach the boat on the Coastal Escape.');
-            lines.push('Interact with it again to depart.');
+            lines.push(
+                '✓ CONSTRUCTION COMPLETE',
+                '',
+                'NEXT TASK',
+                '1. Travel to Coastal Escape.',
+                '2. Find your completed boat.',
+                '3. Interact with it to sail away.'
+            );
         } else {
-            lines.push(`OVERALL: ${this.boatStagesCompleted.filter(Boolean).length}/${BOAT_STAGES.length} stages complete`);
-            lines.push(`CURRENT TASK: ${stage?.name || 'Complete construction'}`);
-            lines.push(stage?.desc || 'Finish preparing the boat to escape.');
+            lines.push(
+                `PROGRESS  ${completedStages}/${BOAT_STAGES.length} stages`,
+                '',
+                `CURRENT STAGE  ${this.boatStage + 1}/${BOAT_STAGES.length}`,
+                stage?.name || 'Complete construction',
+                stage?.desc || 'Finish preparing the boat to escape.',
+                '',
+                'TOOLS CHECKLIST'
+            );
 
-            lines.push('', 'TOOLS');
             for (const key of requiredTools) {
-                lines.push(`${this.equipment[key] ? '✔' : '✖'} ${toolLabels[key]}`);
+                lines.push(`${this.equipment[key] ? '✓' : '○'}  ${toolLabels[key]}`);
             }
 
-            lines.push('', 'MATERIALS NEEDED');
+            lines.push('', 'MATERIALS CHECKLIST');
             if (stage) {
                 for (const [key, amount] of Object.entries(stage.ingredients)) {
                     const available = this.inventory[key] || 0;
                     const remaining = Math.max(0, amount - available);
-                    lines.push(`${available >= amount ? '✔' : '✖'} ${ITEM_DEFS[key].name}: ${available}/${amount}${remaining ? ` (need ${remaining} more)` : ' (ready)'}`);
+                    lines.push(`${available >= amount ? '✓' : '○'}  ${ITEM_DEFS[key].name}  ${available}/${amount}${remaining ? `  (+${remaining} needed)` : ''}`);
                 }
             }
 
+            const missingMaterials = stage
+                ? Object.entries(stage.ingredients).filter(([key, amount]) => (this.inventory[key] || 0) < amount)
+                : [];
+            lines.push('', 'NEXT ACTION');
             if (missingTools.length) {
-                lines.push('', `NEXT: Craft ${missingTools.map(key => toolLabels[key]).join(', ')} at a workbench.`);
-            } else if (stage) {
-                const missingMaterials = Object.entries(stage.ingredients)
-                    .filter(([key, amount]) => (this.inventory[key] || 0) < amount);
-                lines.push('', missingMaterials.length
-                    ? 'NEXT: Gather the missing materials, then return to the boat.'
-                    : 'NEXT: Return to the boat and interact to build this stage.');
+                lines.push(`Craft: ${missingTools.map(key => toolLabels[key]).join(', ')}`);
+                lines.push('Use a discovered workbench.');
+            } else if (missingMaterials.length) {
+                lines.push(`Gather: ${missingMaterials.map(([key, amount]) => ITEM_DEFS[key].name + ' ' + Math.max(0, amount - (this.inventory[key] || 0))).join(', ')}`);
+                lines.push('Return to the boat when ready.');
+            } else {
+                lines.push('Return to the boat and interact');
+                lines.push('to complete this construction stage.');
             }
         }
 
-        if (this.isTouchLayout) {
+        if (compact) {
+            // Keep every objective on its own line on narrow touch screens.
             const compactLines = this.boatBuilt
-                ? ['BOAT READY', 'Reach the boat on Coastal Escape.', 'Tap INTERACT to sail.']
+                ? [
+                    'BOAT ESCAPE',
+                    '✓ CONSTRUCTION COMPLETE',
+                    '',
+                    'NEXT TASK',
+                    '1. Go to Coastal Escape.',
+                    '2. Find the boat.',
+                    '3. Tap INTERACT to sail.',
+                ]
                 : [
-                    `TASK ${this.boatStage + 1}/${BOAT_STAGES.length}: ${stage?.name || 'Construction'}`,
-                    ...requiredTools.map(key => `${this.equipment[key] ? '✔' : '✖'} ${toolLabels[key]}`),
+                    `BOAT TASK  ${this.boatStage + 1}/${BOAT_STAGES.length}`,
+                    stage?.name || 'Construction',
+                    '',
+                    'TOOLS',
+                    ...requiredTools.map(key => `${this.equipment[key] ? '✓' : '○'} ${toolLabels[key]}`),
+                    '',
+                    'MATERIALS',
                     ...(stage ? Object.entries(stage.ingredients).map(([key, amount]) =>
-                        `${ITEM_DEFS[key].name}: ${this.inventory[key] || 0}/${amount}`
+                        `${this.inventory[key] >= amount ? '✓' : '○'} ${ITEM_DEFS[key].name}: ${this.inventory[key] || 0}/${amount}`
                     ) : []),
+                    '',
+                    'NEXT',
                     missingTools.length
-                        ? `NEXT: Craft ${missingTools.map(key => toolLabels[key]).join(', ')}.`
-                        : 'NEXT: Gather materials, then interact with the boat.',
+                        ? `Craft ${missingTools.map(key => toolLabels[key]).join(', ')}.`
+                        : stage && Object.entries(stage.ingredients).some(([key, amount]) => (this.inventory[key] || 0) < amount)
+                            ? 'Gather missing materials.'
+                            : 'Return to the boat and interact.',
                 ];
-            this.boatText.setText(compactLines.join('\\n'));
+            this.boatText.setText(compactLines.join('\n'));
             this.boatText.setFontSize(10);
-            this.boatText.setWordWrapWidth(Math.max(125, Math.min(185, this.scale.width - 105)), true);
+            this.boatText.setWordWrapWidth(Math.max(145, Math.min(220, this.scale.width - 36)), true);
         } else {
-            this.boatText.setText(lines.join('\\n'));
+            this.boatText.setText(lines.join('\n'));
             this.boatText.setFontSize(12);
-            this.boatText.setWordWrapWidth(250, true);
+            this.boatText.setWordWrapWidth(Math.max(260, Math.min(340, this.scale.width * 0.28)), true);
         }
     }
 
