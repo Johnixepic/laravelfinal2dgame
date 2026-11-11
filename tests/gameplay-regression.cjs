@@ -211,7 +211,7 @@ assert.match(source, /GameState\.boatStagesCompleted = \[false, false, false, fa
 assert.match(source, /createGameMenu\(\) \{/);
 assert.match(source, /openMenu\(mode = 'pause'\)/);
 assert.match(source, /startNewGame\(\{ tutorial = false \} = \{\}\) \{[\s\S]*?this\.menuOverlay\?\.destroy\(\)/);
-assert.match(source, /confirmNewGame\(\) \{/);
+assert.match(source, /confirmNewGame\(tutorial = false\) \{/);
 assert.match(source, /mode === 'confirm-new'/);
 assert.match(source, /saveGame\(\{ silent = false \} = \{\}\) \{/);
 assert.match(source, /localStorage\.setItem\('tlc-save-v1'/);
