@@ -198,7 +198,7 @@ assert.equal((source.match(/entryTile: \{ i: 26, j: 15 \}/g) || []).length, 2, '
 assert.match(source, /fromTile: \{ i: 0, j: 15 \}, toMap: 'MAP4', entryTile: \{ i: 26, j: 15 \}/, 'Final island must have a return gate to MAP4');
 assert.match(source, /const panelW = 640, panelH = 700/);
 assert.match(source, /panelBorder\.strokeRect\(-320, -350, 640, 700\)/);
-assert.match(source, /this\.add\.text\(\s*275,\s*-20,/);
+assert.match(source, /this\.add\.text\(\s*270,\s*-20,/);
 assert.match(source, /\)\.setOrigin\(1, 0\);/);
 assert.match(source, /left: this\.craftingPanel\.x - 320/);
 assert.match(source, /return normalizedX \+ normalizedY <= 1\.03/);
