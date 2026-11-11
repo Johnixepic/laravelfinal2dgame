@@ -77,6 +77,15 @@
             height: 100% !important;
             touch-action: none;
         }
+        #game-container .game-dom-menu {
+            position: absolute; inset: 0; z-index: 30000; pointer-events: none;
+        }
+        #game-container .game-dom-menu-button {
+            pointer-events: auto; font-size: clamp(12px, 1.2vw, 17px) !important; font-weight: 700;
+        }
+        #game-container .game-dom-menu-button:focus-visible {
+            outline: 3px solid #f4d77b; outline-offset: 3px;
+        }
 
         .game-header {
             flex: 0 0 auto;
