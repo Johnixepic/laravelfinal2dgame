@@ -131,7 +131,7 @@ const menuDom = section('    createMenuDomButtons(', '    destroyMenuDom() {');
 assert.doesNotMatch(menuDom, /button\.on\('pointerup'/);
 assert.match(source, /destroyMenuDom\(\)/);
 assert.match(source, /this\.cameras\?\.main\?\.stopFollow\(\)/);
-assert.match(source, /this\.cameras\?\.main\?\.startFollow\(this\.player, true, 0\.08, 0\.08\)/);
+assert.match(source, /this\.cameras\.main\.startFollow\(this\.player, true, 0\.08, 0\.08\)/);
 const menuOpen = section('    openMenu(mode = \'pause\') {', '    confirmNewGame(tutorial = false) {');
 assert.match(menuOpen, /const openingMenu = !this\.menuOpen/);
 assert.match(menuOpen, /this\.cameras\?\.main\?\.setZoom\(1\)/);
